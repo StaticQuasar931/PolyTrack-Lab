@@ -1,0 +1,40 @@
+/* A builder chooses what to share; the course leaves the device only in their own message. */
+(() => {
+  'use strict';
+  const lab=window.PolyTrackLab;
+  const contacts={email:'StaticQuasar931Games@gmail.com',discord:'https://discord.gg/jW2az4AQUH',form:'https://sites.google.com/view/staticquasar931/google-form'};
+  const make=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
+  const dialog=make('dialog','lab-run-dialog lab-submit-dialog'),heading=make('h2','','Submit a Lab track'),intro=make('p','','Create a submission file, then attach it to an email or share it in Discord. Nothing is sent automatically.'),form=make('form','lab-submit-form'),status=make('p','lab-run-status'),actions=make('div','lab-run-buttons');
+  dialog.setAttribute('aria-label','Submit a Lab track');status.setAttribute('role','status');form.addEventListener('submit',event=>event.preventDefault());
+  const field=(labelText,id,multiline=false)=>{const label=make('label','lab-submit-field'),text=make('span','',labelText),input=make(multiline?'textarea':'input');input.id='lab-submit-'+id;input.name=id;if(!multiline)input.type='text';label.append(text,input);form.append(label);return input;};
+  const name=field('Track name','name'),author=field('Track author','author'),code=field('Exported track code','code',true),notes=field('What should we try? (optional)','notes',true);name.maxLength=80;author.maxLength=80;code.maxLength=2000000;code.spellcheck=false;code.placeholder='Paste the code from the track editor’s Export button';notes.maxLength=500;notes.placeholder='A route tip, a recommended driving style, or a trick to try';
+  const includeLabel=make('label','lab-submit-physics'),include=make('input');include.type='checkbox';include.checked=true;includeLabel.append(include,make('span','','Include my current physics as a recommendation'));form.append(includeLabel);
+  const physicsSummary=make('p','lab-submit-note');form.append(physicsSummary);
+  const addButton=(text,fn)=>{const button=make('button','button',text);button.type='button';button.addEventListener('click',async()=>{button.disabled=true;try{await fn();}catch(error){status.textContent=error.message||'This action could not finish.';}finally{button.disabled=false;}});actions.append(button);return button;};
+  let returnFocus=null;
+  const updatePhysics=()=>{const settings=lab.getSettings();physicsSummary.textContent=include.checked?'Recommended: '+(lab.getSetupIdentity?.(settings)?.label||'Current setup')+'. Players can choose whether to apply it.':'The submission will use a normal PolyTrack track code.';};
+  include.addEventListener('change',updatePhysics);
+  function validated(){const trackCode=code.value.trim().replace(/\s+/g,'');if(!name.value.trim())throw Error('Give your track a name.');if(!/^PolyTrack[A-Za-z0-9+/_=-]+$/.test(trackCode)&&!/^PolyTrackLab[A-Za-z0-9+/_=.-]+$/.test(trackCode))throw Error('Paste a complete exported PolyTrack or Lab course code.');if(trackCode.length>2000000)throw Error('This course code is too large.');return trackCode;}
+  async function submission(){
+    const trackCode=validated(),physics=include.checked?Object.fromEntries(lab.fields.map(field=>[field.key,lab.getSettings()[field.key]])):undefined;
+    const sharedCode=typeof lab.encodeLabCourse==='function'&&include.checked?await lab.encodeLabCourse({...((trackCode.startsWith('PolyTrackLab1'))?lab.decodeLabCourse(trackCode):{code:trackCode}),physics,name:name.value.trim(),author:author.value.trim(),notes:notes.value.trim()}):trackCode;
+    const text=['PolyTrack Lab track submission','Track: '+name.value.trim(),'Author: '+(author.value.trim()||'Not supplied'),'Notes: '+(notes.value.trim()||'None'),'','Track code:',sharedCode,...(physics&&typeof lab.encodeLabCourse!=='function'?['','Recommended physics:',JSON.stringify(physics,null,2)]:[])].join('\n');
+    if(typeof sharedCode!=='string')throw Error('The course could not be packaged.');return text;
+  }
+  const useOpen=addButton('Use open track',async()=>{const exportCurrent=lab.getEditorTrackCode||lab.trackActions?.exportTrack;if(typeof exportCurrent!=='function')throw Error('Open a track first, or paste its exported code.');code.value=await exportCurrent();status.textContent='Open track code added. Check the name and author before sharing.';});
+  addButton('Download submission',async()=>{const text=await submission(),blob=new Blob([text],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),link=make('a');link.href=url;link.download=(name.value.trim().replace(/[^a-z0-9_-]+/gi,'-').replace(/^-|-$/g,'')||'lab-track')+'.polytrack-lab.txt';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);status.textContent='Submission file downloaded. Attach it to your email or share it in Discord.';});
+  addButton('Copy submission',async()=>{const text=await submission();if(!navigator.clipboard?.writeText)throw Error('Clipboard is unavailable here. Download the submission file instead.');await navigator.clipboard.writeText(text);status.textContent='Submission copied. Paste it into your own message.';});
+  addButton('Email draft',()=>{if(!name.value.trim())throw Error('Give your track a name first.');const body=['Hi Static,','', 'Track: '+name.value.trim(),'Author: '+(author.value.trim()||'Not supplied'),'Notes: '+(notes.value.trim()||'None'),'','I will attach the downloaded PolyTrack Lab submission file.'].join('\n');const link=make('a');link.href='mailto:'+contacts.email+'?subject='+encodeURIComponent('PolyTrack Lab track: '+name.value.trim())+'&body='+encodeURIComponent(body);link.click();status.textContent='Attach your downloaded submission file in the email draft. You choose when to send it.';});
+  for(const [text,url] of [['Join Discord',contacts.discord],['Submission form',contacts.form]]){const link=make('a','button',text);link.href=url;link.target='_blank';link.rel='noopener noreferrer';actions.append(link);}
+  addButton('Back',()=>dialog.close());
+  dialog.append(heading,intro,form,status,actions);document.body.append(dialog);
+  lab.openTrackSubmission=()=>{returnFocus=document.activeElement;status.textContent='';useOpen.disabled=typeof lab.getEditorTrackCode!=='function'&&typeof lab.trackActions?.exportTrack!=='function';updatePhysics();lab.onPanelOpen?.();if(!dialog.open)dialog.showModal();name.focus();};
+  dialog.addEventListener('close',()=>{if(returnFocus?.isConnected)returnFocus.focus();});
+  let outside=false;const isOutside=event=>{const rect=dialog.getBoundingClientRect();return event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom;};
+  dialog.addEventListener('pointerdown',event=>{outside=event.target===dialog&&isOutside(event);});dialog.addEventListener('click',event=>{if(outside&&event.target===dialog&&isOutside(event))dialog.close();outside=false;});
+  for(const type of ['keydown','keyup','pointerdown','pointerup','click'])dialog.addEventListener(type,event=>event.stopPropagation());
+  // The library's document-level keyboard navigation yields to this native modal.
+  for(const type of ['keydown','keyup'])window.addEventListener(type,event=>{if(!dialog.open)return;event.stopImmediatePropagation();if(type==='keydown'&&event.key==='Escape'){event.preventDefault();dialog.close();}},true);
+  let queued=false;const mount=()=>{queued=false;for(const header of document.querySelectorAll('.sq-extra-header'))if(!header.querySelector('.lab-submit-open')){const button=make('button','sq-extra-close lab-submit-open','Submit a track');button.type='button';button.title='Prepare a track and optional recommended physics to share with Static';button.addEventListener('click',()=>lab.openTrackSubmission());header.insertBefore(button,header.querySelector('.sq-extra-close:not(.sq-extra-surprise)'));}};
+  new MutationObserver(()=>{if(!queued){queued=true;requestAnimationFrame(mount);}}).observe(document.body,{subtree:true,childList:true});mount();
+})();

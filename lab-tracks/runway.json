@@ -1,16 +1,72 @@
 {
   "id": "lab-runway",
-  "name": "Lab Runway XL",
+  "name": "Lab Runway: Desert Circuit",
   "author": "PolyTrack Lab",
-  "description": "A long straight run, a broad drift pad, and four optional side launch ramps. Drive straight for the finish or explore the sides to test your setup.",
-  "trackId": "cd9bcb8f107d4de733ecf5c59daaed2d9b83ecb80f790c8e897fc830af28e6dd",
+  "description": "A 3 km desert test circuit with a 600 m acceleration straight, four broad braking turns, five ordered checkpoints and an optional ramp apron. Follow the arrows through the turns; the side ramps are optional.",
+  "trackId": "a43aa6d8ca1cb0366f40954ec42b4441fefdb4c01f761051bc11dd5d8591eec1",
   "trackPath": "lab-tracks/runway.track",
   "thumbnailUrl": "lab-tracks/runway.svg",
-  "revision": 2,
+  "revision": 3,
+  "environment": "desert",
   "features": [
-    "Long straight",
-    "Open drift pad",
-    "Four side ramps"
+    "3 km test route",
+    "Four braking turns",
+    "Five checkpoints",
+    "Side ramp apron"
   ],
-  "parts": 218
+  "parts": 587,
+  "routeWaypoints": [
+    {
+      "x": 0,
+      "z": 0
+    },
+    {
+      "x": 0,
+      "z": -120
+    },
+    {
+      "x": 120,
+      "z": -120
+    },
+    {
+      "x": 120,
+      "z": -240
+    },
+    {
+      "x": -40,
+      "z": -240
+    },
+    {
+      "x": -40,
+      "z": -324
+    }
+  ],
+  "checkpoints": [
+    {
+      "x": 0,
+      "z": -80,
+      "rotation": 0
+    },
+    {
+      "x": 80,
+      "z": -120,
+      "rotation": 3
+    },
+    {
+      "x": 120,
+      "z": -200,
+      "rotation": 0
+    },
+    {
+      "x": 20,
+      "z": -240,
+      "rotation": 1
+    },
+    {
+      "x": -40,
+      "z": -300,
+      "rotation": 0
+    }
+  ],
+  "routeLengthMeters": 3020
 }

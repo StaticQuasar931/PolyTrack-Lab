@@ -1,0 +1,14 @@
+.lab-submit-dialog{width:min(760px,calc(100vw - 32px));box-sizing:border-box}
+.lab-submit-dialog>p{font-size:18px;line-height:1.4;margin:8px 0 16px}
+.lab-submit-form{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px;background:var(--surface-secondary-color)}
+.lab-submit-field{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:20px}
+.lab-submit-field:has(textarea),.lab-submit-physics,.lab-submit-note{grid-column:1/-1}
+.lab-submit-field input,.lab-submit-field textarea{box-sizing:border-box;width:100%;min-height:40px;padding:9px;border:1px solid #a4b8db;background:#17234b;color:#fff;font:18px ForcedSquare,Arial,sans-serif}
+.lab-submit-field textarea{resize:vertical;min-height:72px;max-height:220px;font:15px/1.4 monospace}
+.lab-submit-field input:focus-visible,.lab-submit-field textarea:focus-visible{outline:2px solid #bce5ff;outline-offset:2px}
+.lab-submit-physics{display:flex;align-items:center;gap:8px;font-size:18px}
+.lab-submit-physics input{width:20px;height:20px;accent-color:#8fbfff}
+.lab-submit-note{margin:0;font-size:16px;line-height:1.35;opacity:.8}
+.lab-submit-dialog>.lab-run-buttons{gap:8px}.lab-submit-dialog>.lab-run-buttons>.button{font-size:19px;padding:8px 12px}
+.sq-extra-header>.lab-submit-open{white-space:nowrap}
+@media(max-width:620px){.lab-submit-form{grid-template-columns:1fr}.lab-submit-field{grid-column:1/-1}.sq-extra-header>.lab-submit-open{grid-column:1/-1;grid-row:auto;justify-self:stretch}}

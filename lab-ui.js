@@ -18,7 +18,7 @@
   const icon = name => {const img=make('img','ptlab-icon');img.src=`images/lab-presets/${name}.svg`;img.alt='';return img;};
   const presetCopy = {standard:['standard','100% original · nothing changed'],arcade:['arcade','Fast and easy to steer'],drift:['drift','Slide around corners'],rocket:['rocket','Big speed · boost'],gentle:['gentle','Slower and forgiving'],stunt:['stunt','Boost · slide · jump'],lowgravity:['lowgravity','Float through the air'],random:['random','A new experiment every click']};
   const keyLabel=action=>lab().getBindingLabel?.(action)||({boost:'B',handbrake:'N',jump:'J'})[action];
-  const fieldIcons = {acceleration:'rocket',reverse:'reverse',braking:'braking',grip:'drift',steering:'steering',downforce:'downforce',coasting:'braking',maxSpeed:'gentle',boost:'rocket',handbrake:'drift',jump:'stunt',gravity:'lowgravity'};
+  const fieldIcons = {acceleration:'rocket',reverse:'reverse',braking:'braking',grip:'drift',steering:'steering',downforce:'downforce',coasting:'braking',maxSpeed:'gentle',boost:'rocket',handbrake:'drift',jump:'stunt',airJumps:'stunt',gravity:'lowgravity'};
   const format = (value, f) => {
     const unit = (f.unit || '').trim();
     return num(value) + (['×','x','%'].includes(unit) ? unit : unit ? ` ${unit}` : '');
@@ -29,6 +29,7 @@
     if (f.key === 'maxSpeed') return value ? `Limits total speed to ${format(value,f)}.` : 'Original uncapped speed.';
     if (f.key === 'boost') return value ? `${keyLabel('boost')} adds ${num(value)}× original engine power.` : 'Boost disabled.';
     if (f.key === 'jump') return value ? `${keyLabel('jump')} on the ground: ${format(value,f)} upward speed.` : 'Jump disabled.';
+    if (f.key === 'airJumps') return value ? `${num(value)} extra ${keyLabel('jump')} ${value===1?'press':'presses'} in the air. Enable Jump strength too.` : 'Off. Land to jump again.';
     if (f.key === 'handbrake') return value ? `Hold ${keyLabel('handbrake')} for rear braking and slides.` : 'Handbrake disabled.';
     if (f.key === 'gravity') return value===0 ? 'Zero gravity. You float when airborne.' : `${Math.round(value*100)}% of normal gravity. ${value<1?'Longer jumps and slower falls.':'Shorter jumps and faster falls.'}`;
     if (f.key === 'coasting') return value ? `About ${Math.round(Math.exp(-value)*100)}% of speed remains after 1 second off both pedals, before other game forces.` : 'Original coasting behavior.';
@@ -83,7 +84,7 @@
     const bindings=make('div','ptlab-binding-mount');
     const history=make('details','ptlab-saved-section ptlab-history'),historySummary=make('summary','','Recent experiments'),historyList=make('div');history.append(historySummary,historyList);
     scroll.append(bindings,presetSection,warning,advanced,saved,history);
-    window.PolyTrackLab.mountBindings?.(bindings,()=>{const next=lab().enableAllMechanics(draft);for(const key of ['boost','handbrake','jump'])draft[key]=next[key];selectedPreset=null;refresh();say('Boost, slide and jump enabled in the draft. Apply to play.');});
+    window.PolyTrackLab.mountBindings?.(bindings,()=>{const next=lab().enableAllMechanics(draft);for(const key of ['boost','handbrake','jump','airJumps'])draft[key]=next[key];selectedPreset=null;refresh();say('Boost, slide and double jump enabled in the draft. Apply to play.');});
     const status = make('div','ptlab-status'); status.setAttribute('role','status'); status.setAttribute('aria-live','polite');
     const footer = make('footer','ptlab-footer'), stateCopy = make('div','ptlab-state-copy'), changeSummary = make('strong','ptlab-change-summary');
     stateCopy.append(changeSummary,make('span','','Apply saves on this device and restarts the game.'));

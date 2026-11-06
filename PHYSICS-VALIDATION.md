@@ -47,6 +47,10 @@ Settings are stored only in this browser's local storage for the site's origin. 
 
 ## Expanded Lab Runway
 
-Runway revision 2 uses 218 native track parts: a broad flat practice pad, an uninterrupted central route from plane start to plane finish, and four optional side launch ramps. The pad spans about 140 meters across and 620 meters along the driving direction. Ramps use native PlaneSlopeUp parts at x = -8 and 8, z = -40 and -76 in track grid units. Flat pad sections extend beyond the ramps for landings. The central route stays flat, so driving straight still reaches the finish without taking a ramp.
+Runway revision 3 uses 587 native parts in Desert. Its connected 3,020-meter route includes a 600-meter straight, four broad braking turns, five ordered checkpoints, four optional side ramps, and landing space. Turn arrows guide the route. The previous straight revision 2 remains a different native track if already saved.
 
-The current canonical track ID is `cd9bcb8f107d4de733ecf5c59daaed2d9b83ecb80f790c8e897fc830af28e6dd`. It intentionally differs from the short revision 1 course. `node tests/runway.cjs` verifies native export compression round trip, metadata, canonical hash, all 218 placements, no duplicate origins, the continuous flat finish route, and the four ramp landing areas. The separate community catalog is unchanged.
+The current canonical ID is `a43aa6d8ca1cb0366f40954ec42b4441fefdb4c01f761051bc11dd5d8591eec1`. `node tests/runway.cjs` verifies the actual native parser, canonical hash, connected route, checkpoint order, ramp landings, and pixel-exact native preview. The separate community catalog is unchanged.
+
+Air-jump fixtures at 12 m/s reached 6.9238 m with one road jump, 22.5580 m with one extra air jump, and 38.1860 m with two extras. Excess presses do not add more impulses. Separate-press timing, grounded recharge, restart state, and deterministic trajectories are tested.
+
+Lab course workers explicitly enable the adapter at startup, including when starting on Original values. Live messages validate known finite fields atomically and reject changes to baked downforce. Gravity explicitly restores the native 1x force after a low-gravity section. Tests cover live field changes, zone entry/exit restoration, ring-plane crossings, course-specific record keys and rule snapshots, corrupt stored data handling, and clean exit reloads. Ring gates are non-colliding bonus detectors; native checkpoints retain responsibility for respawning and finishing.

@@ -27,6 +27,15 @@
   if (!ui) return;
   const make = (tag, className, text) => { const node = document.createElement(tag); if (className) node.className = className; if (text !== undefined) node.textContent = text; return node; };
   const states = new WeakMap();
+  const carPreviews=new Map();
+  async function carPreview(style){
+    if(typeof style!=='string'||!style||typeof lab.renderCarThumbnail!=='function')return null;
+    if(!carPreviews.has(style)){
+      const promise=Promise.resolve().then(()=>lab.renderCarThumbnail(style)).catch(error=>{carPreviews.delete(style);throw error;});
+      carPreviews.set(style,promise);if(carPreviews.size>160)carPreviews.delete(carPreviews.keys().next().value);
+    }
+    return carPreviews.get(style);
+  }
   let queued = false, nextId = 0, pendingTrack = null;
   function mount(trackId) {
     queued = false;
@@ -56,6 +65,21 @@
     const container = board.querySelector(':scope > .container');
     if (container) { container.id = identity + '-local'; container.setAttribute('role', 'tabpanel'); container.setAttribute('aria-labelledby', local.id); }
     const selectedPublic=new Map();
+    let thumbnailObserver=null;
+    const stopPreviews=()=>{thumbnailObserver?.disconnect();thumbnailObserver=null;};
+    function previewList(list){
+      const pending=new Map();
+      const load=async image=>{const getStyle=pending.get(image);if(!getStyle)return;pending.delete(image);try{const source=await carPreview(await getStyle());if(source&&image.isConnected)image.src=source;}catch{image.title='Saved car preview unavailable';}};
+      if(typeof IntersectionObserver==='function'){const observer=new IntersectionObserver(entries=>{for(const entry of entries)if(entry.isIntersecting){observer.unobserve(entry.target);load(entry.target);}},{root:list,rootMargin:'100px'});thumbnailObserver=observer;}
+      return (row,getStyle)=>{const image=make('img','lab-car-thumbnail');image.alt='';image.src='images/car_thumbnail_placeholder.png';image.width=50;image.height=50;image.draggable=false;pending.set(image,getStyle);row.append(image);if(thumbnailObserver)thumbnailObserver.observe(image);else requestAnimationFrame(()=>load(image));};
+    }
+    function updateOpponentSummary(){
+      const note=ui.querySelector('.track-info-ui .opponents-container');if(!note)return;
+      const nativeWatch=ui.querySelector('.track-info-ui .side-panel > .button.watch');
+      if(nativeWatch){nativeWatch.dataset.labPublicSelection=String(state.active==='snapshot'&&selectedPublic.size>0);nativeWatch.disabled=!(state.active==='snapshot'&&selectedPublic.size)&&!(lab.getPersonalBest?.(state.trackId)>0&&lab.replayEnabled?.()!==false);}
+      if(state.active==='snapshot'&&selectedPublic.size){note.classList.remove('no-opponents');note.textContent=`${selectedPublic.size} public ghost${selectedPublic.size===1?'':'s'} selected. Play to race, or Watch to view their cars.`;}
+      else {note.classList.add('no-opponents');note.textContent=state.active==='snapshot'?'Select public ghosts on the left, then Race selected.':'Click a saved time for its physics and replay actions.';}
+    }
     const state = { trackId: null, snapshot: null, error: null, token: 0, active: 'local', load: null, render: null, refreshComparison: null };
     function select(source) {
       state.active = source;
@@ -66,20 +90,23 @@
       for (const [button, selected] of [[local, !snapshot], [reference, snapshot]]) { button.setAttribute('aria-selected', String(selected)); button.tabIndex = selected ? 0 : -1; }
       heading.textContent = snapshot ? 'Kodub top 100' : 'Lab experiments';
       subheading.textContent = snapshot ? 'Saved reference · Original physics' : 'PB per setup · This device';
+      updateOpponentSummary();
       if (snapshot) render();
       else {refreshComparison();renderExperiments();}
     }
     let recentRuns=false;
     function renderExperiments(){
+      stopPreviews();
       experiments.replaceChildren();if(!state.trackId){experiments.append(make('p','lab-board-note','Loading saved runs…'));return;}const tools=make('div','lab-experiment-tools'),mode=make('select');mode.setAttribute('aria-label','Local run view');
       for(const [value,label] of [['best','PB per setup'],['recent','Recent runs']]){const option=make('option','',label);option.value=value;mode.append(option);}mode.value=recentRuns?'recent':'best';mode.addEventListener('change',()=>{recentRuns=mode.value==='recent';renderExperiments();});tools.append(mode);experiments.append(tools);
       const rows=recentRuns?(lab.getRunHistory?.({trackId:state.trackId,limit:200})||[]).map(r=>({...r,isCurrentSetup:r.physicsKey===lab.getPhysicsKey()})):lab.getTrackExperiments?.(state.trackId)||[];
       if(!rows.length){experiments.append(make('p','lab-board-empty','Finish a run to save your first experiment. Each physics setup keeps its own personal best.'));return;}
       const list=make('ol','lab-public-list');list.setAttribute('aria-label','Local setup personal bests');
+      const addPreview=previewList(list);
       rows.forEach((record,index)=>{const li=make('li'),row=make('button','lab-public-row lab-experiment-row');row.type='button';
         const label=make('span','lab-experiment-label');label.append(make('strong','',`${record.nickname || 'Anonymous'} (you)`),make('span','',`${record.setupLabel||record.presetName}${record.saveNumber?' · Save #'+record.saveNumber:''}`));
         if(recentRuns)label.append(make('small','lab-run-age',new Date(record.date).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit',second:'2-digit'})));
-        row.append(make('span','lab-public-rank',recentRuns?'↻':'#'+(index+1)),label,make('span','lab-public-time',time(record.timeMs)));
+        row.append(make('span','lab-public-rank',recentRuns?'↻':'#'+(index+1)));addPreview(row,()=>lab.getLocalCarStyle?.(record));row.append(label,make('span','lab-public-time',time(record.timeMs)));
         row.title=lab.describeSettings?.(record.physicsValues)||'Open settings for this run';
         row.addEventListener('click',()=>lab.showRunDetails(record));row.addEventListener('contextmenu',e=>{e.preventDefault();lab.showRunDetails(record);});li.append(row);list.append(li);
       });experiments.append(list);
@@ -108,10 +135,12 @@
       reference.title = status.description; announcement.textContent = status.description;
     }
     function render() {
+      stopPreviews();
       panel.replaceChildren();
       if (!state.snapshot) { panel.append(make('p', 'lab-board-note', 'Loading saved public results…')); return; }
       if (!state.snapshot.available) { panel.append(make('p', 'lab-board-empty', state.error || 'No public snapshot is saved for this track. Local Lab times still work.')); return; }
       const snapshot = state.snapshot;
+      const captureId=state.trackId;
       const date = new Date(snapshot.capturedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
       const note = make('div', 'lab-snapshot-summary');
       note.append(make('p', 'lab-board-total', `${snapshot.entries.length} saved results · ${snapshot.total.toLocaleString()} public results reported`));
@@ -122,24 +151,28 @@
       const tools=make('div','lab-ghost-tools'),selectionNote=make('span','','0 selected');selectionNote.setAttribute('role','status');
       const watch=make('button','button','Watch selected'),race=make('button','button','Race selected'),clear=make('button','button','Clear');
       for(const button of [watch,race,clear])button.type='button';
-      const refreshSelection=()=>{selectionNote.textContent=selectedPublic.size+' selected';for(const button of [watch,race,clear])button.disabled=!selectedPublic.size;};
+      const refreshSelection=()=>{selectionNote.textContent=selectedPublic.size+' selected';for(const button of [watch,race,clear])button.disabled=!selectedPublic.size;updateOpponentSummary();};
       let launching=false;
       for(const [button,mode] of [[watch,'watch'],[race,'race']])button.addEventListener('click',async()=>{if(launching)return;launching=true;watch.disabled=race.disabled=true;try{await lab.playPublicSelection(state.trackId,[...selectedPublic.values()],mode);}catch(error){selectionNote.textContent=error.message;}finally{launching=false;watch.disabled=race.disabled=!selectedPublic.size;}});
       clear.addEventListener('click',()=>{selectedPublic.clear();render();});tools.append(selectionNote,watch,race,clear);panel.append(tools);refreshSelection();
       const list = make('ol', 'lab-public-list'); list.tabIndex = 0; list.setAttribute('aria-label', 'Saved public results, scroll to view all ' + snapshot.entries.length);
+      const addPreview=previewList(list);
+      const capturePromise=Promise.resolve(lab.getPublicReplayCapture?.(captureId));
       for (const entry of snapshot.entries) {
         const row = make('li', 'lab-public-row'); row.value = entry.rank;
         const rank = make('span', 'lab-public-rank', '#' + entry.rank);
         const nickname=entry.nickname.replace(/[\u200b-\u200d\u2060\ufeff\u3164\u2800]/g,'').trim()||'Anonymous';
         const name = make('span', 'lab-public-name', nickname); name.title = entry.nickname;
         if (entry.countryCode) {
-          const country = make('span', 'lab-public-country', entry.countryCode.toUpperCase()); country.title = 'Public country code: ' + entry.countryCode.toUpperCase();
-          name.append(country);
+          const country = make('img', 'lab-public-flag');country.src='images/countries/'+entry.countryCode.toLowerCase()+'.svg';country.alt=entry.countryCode.toUpperCase();country.title='Public country code: '+entry.countryCode.toUpperCase();country.draggable=false;country.addEventListener('error',()=>{country.hidden=true;},{once:true});
+          name.prepend(country);
         }
         const checked=make('span','lab-ghost-check',selectedPublic.has(entry.rank)?'☑':'☐');checked.setAttribute('aria-hidden','true');
-        row.append(checked,rank, name, make('span', 'lab-public-time', time(entry.timeMs))); list.append(row);
+        const savedEntry=capture=>capture?.entries.find(saved=>saved.rank===entry.rank&&saved.nickname===entry.nickname&&saved.timeMs===entry.timeMs&&saved.status==='available');
+        row.append(checked,rank);addPreview(row,async()=>savedEntry(await capturePromise)?.carStyle);row.append(name, make('span', 'lab-public-time', time(entry.timeMs))); list.append(row);
         row.tabIndex=0;row.setAttribute('role','button');row.setAttribute('aria-pressed',String(selectedPublic.has(entry.rank)));row.title='Select ghost; right-click for replay details';
-        const toggle=()=>{if(selectedPublic.has(entry.rank))selectedPublic.delete(entry.rank);else{if(selectedPublic.size>=10){selectionNote.textContent='Select up to 10 ghosts at once.';return;}selectedPublic.set(entry.rank,entry);}checked.textContent=selectedPublic.has(entry.rank)?'☑':'☐';row.setAttribute('aria-pressed',String(selectedPublic.has(entry.rank)));refreshSelection();};
+        const toggle=()=>{if(row.dataset.replayStatus==='unavailable'){selectionNote.textContent='This score is a reference only; no replay was captured. Right-click for details.';return;}if(selectedPublic.has(entry.rank))selectedPublic.delete(entry.rank);else{if(selectedPublic.size>=10){selectionNote.textContent='Select up to 10 ghosts at once.';return;}selectedPublic.set(entry.rank,entry);}checked.textContent=selectedPublic.has(entry.rank)?'☑':'☐';row.setAttribute('aria-pressed',String(selectedPublic.has(entry.rank)));refreshSelection();};
+        capturePromise.then(capture=>{if(!row.isConnected)return;const available=!!savedEntry(capture);row.dataset.replayStatus=available?'available':'unavailable';if(!available){row.setAttribute('aria-disabled','true');row.title='Saved score reference only. No replay was captured; right-click for details.';if(selectedPublic.delete(entry.rank)){checked.textContent='☐';row.setAttribute('aria-pressed','false');refreshSelection();}}}).catch(()=>{if(row.isConnected)row.title='Replay availability could not be checked; select to retry.';});
         row.addEventListener('click',toggle);
         row.addEventListener('contextmenu',event=>{event.preventDefault();lab.showPublicReplay(state.trackId,entry);});
         row.addEventListener('keydown',event=>{if(['Enter',' '].includes(event.key)){event.preventDefault();event.stopPropagation();toggle();}});
@@ -147,6 +180,16 @@
       panel.append(list);
     }
     state.render = render;
+    let nativeLaunching=false;
+    for(const [selector,mode] of [['.side-panel > .button.play','race'],['.side-panel > .button.watch','watch']]){
+      const button=ui.querySelector('.track-info-ui '+selector);
+      button?.addEventListener('click',async event=>{
+        if(state.active!=='snapshot'||!selectedPublic.size)return;
+        event.preventDefault();event.stopImmediatePropagation();if(nativeLaunching)return;nativeLaunching=true;button.disabled=true;let failed=false;
+        try{await lab.playPublicSelection(state.trackId,[...selectedPublic.values()],mode);}catch(error){failed=true;announcement.textContent=error.message;const note=ui.querySelector('.track-info-ui .opponents-container');if(note)note.textContent=error.message;}
+        finally{nativeLaunching=false;button.disabled=false;if(!failed)updateOpponentSummary();}
+      },true);
+    }
     state.load = async id => {
       if (!id || state.trackId === id) return;
       selectedPublic.clear();state.trackId = id; state.snapshot = null; state.error = null; const request = ++state.token; updateStatus();renderExperiments();
@@ -176,7 +219,7 @@
       if (zero && container && empty.parentElement !== container) container.append(empty);
       empty.hidden = !zero;
     }
-    const observer = new MutationObserver(() => { if (!board.isConnected) { observer.disconnect(); return; } refreshEmpty(); });
+    const observer = new MutationObserver(() => { if (!board.isConnected) { observer.disconnect();stopPreviews(); return; } refreshEmpty(); });
     observer.observe(board, { subtree: true, childList: true }); refreshEmpty();
     if (trackId || lab.currentLeaderboardTrackId) state.load(trackId || lab.currentLeaderboardTrackId);
   }

@@ -14,12 +14,21 @@
 'use strict';
 let labSettings;
 try { labSettings=JSON.parse(decodeURIComponent(self.location.hash.slice(1))); } catch { labSettings={}; }
-const labDefaults={acceleration:1,reverse:1,braking:1,grip:1,steering:1,downforce:1,coasting:0,maxSpeed:0,boost:0,handbrake:0,jump:0,gravity:1};
+const labDefaults={acceleration:1,reverse:1,braking:1,grip:1,steering:1,downforce:1,coasting:0,maxSpeed:0,boost:0,handbrake:0,jump:0,airJumps:0,gravity:1};
 for(const key of Object.keys(labDefaults))if(typeof labSettings?.[key]!=='number'||!Number.isFinite(labSettings[key]))labSettings={...labSettings,[key]:labDefaults[key]};
+labSettings.airJumps=Math.max(0,Math.min(3,Math.round(labSettings.airJumps)));
+const labDynamicCourse=labSettings._dynamicCourse===true,labInitialDownforce=labSettings.downforce;
+const labCourseBounds={acceleration:[.1,10],reverse:[.1,10],braking:[.1,10],grip:[.1,5],steering:[.2,2],downforce:[0,10],coasting:[0,10],maxSpeed:[0,3000],boost:[0,10],handbrake:[0,5],jump:[0,40],airJumps:[0,3],gravity:[0,4]};
 let labBoost=false,labHandbrake=false,labJumpSequence=0;
 const labPlayerCars=new Set();
 const labPlayerState=new Map();
 self.addEventListener('message',event=>{
+  if(event.data?.labCourseSettings){
+    event.stopImmediatePropagation();const values=event.data.labCourseSettings;
+    const invalid=!labDynamicCourse||!values||typeof values!=='object'||Array.isArray(values)||Object.entries(values).some(([key,value])=>!labCourseBounds[key]||typeof value!=='number'||!Number.isFinite(value)||value<labCourseBounds[key][0]||value>labCourseBounds[key][1]||key==='airJumps'&&!Number.isInteger(value))||values.downforce!==undefined&&values.downforce!==labInitialDownforce;
+    if(invalid){self.postMessage?.({labCourseSettingsRejected:true,error:'Live course settings are invalid or require a physics restart.'});return;}
+    labSettings={...labSettings,...values,_dynamicCourse:true};return;
+  }
   if(event.data?.labPhysics){labBoost=event.data.boost===true;labHandbrake=event.data.handbrake===true;if(Number.isSafeInteger(event.data.jumpSequence)&&event.data.jumpSequence>=0)labJumpSequence=event.data.jumpSequence;if(event.data.cancelJump===true)for(const state of labPlayerState.values())state.jumpSequence=labJumpSequence;event.stopImmediatePropagation();return;}
   const message=event.data;
   if(message?.messageType===3){if(message.carRecording==null){labPlayerCars.add(message.carId);labPlayerState.set(message.carId,{jumpSequence:labJumpSequence,cooldown:0});}else{labPlayerCars.delete(message.carId);labPlayerState.delete(message.carId);}}
@@ -32,7 +41,7 @@ self.importScripts=(...urls)=>{
   if(urls.some(url=>String(url).endsWith('lib/polytrack_physics.js'))){
     const original=PolyTrackPhysics;
     self.PolyTrackPhysics=async options=>{
-      if(Object.keys(labDefaults).every(key=>labSettings[key]===labDefaults[key]))return original(options);
+      if(!labDynamicCourse&&Object.keys(labDefaults).every(key=>labSettings[key]===labDefaults[key]))return original(options);
       const response=await fetch('polytrack_physics.wasm');
       if(!response.ok)throw new Error('PolyTrack Lab could not load the physics engine.');
       const bytes=new Uint8Array(await response.arrayBuffer());
@@ -76,7 +85,7 @@ function labTuneStep(memory,car,settings,boost,afterStep=false,actions={}){
   if(!vehicle||!body||!wheels||body+392>length||wheels+1136>length)throw new Error('Invalid physics vehicle layout.');
   // Bullet stores acceleration and mass-scaled gravitational force separately.
   // Native 0.6.3 gravity is -9.82 m/s²; inverse mass is at body+344.
-  if(!afterStep&&typeof settings.gravity==='number'&&settings.gravity!==1){const inverseMass=data.getFloat32(body+344,true);if(!(inverseMass>0))throw new Error('Invalid car mass for gravity tuning.');const acceleration=-9.82*settings.gravity;data.setFloat32(body+384,acceleration,true);data.setFloat32(body+368,acceleration/inverseMass,true);}
+  if(!afterStep&&typeof settings.gravity==='number'&&(settings.gravity!==1||settings._dynamicCourse===true)){const inverseMass=data.getFloat32(body+344,true);if(!(inverseMass>0))throw new Error('Invalid car mass for gravity tuning.');const acceleration=-9.82*settings.gravity;data.setFloat32(body+384,acceleration,true);data.setFloat32(body+368,acceleration/inverseMass,true);}
   if(!afterStep)for(let index=0;index<4;index++){
     const wheel=wheels+284*index;
     const engine=data.getFloat32(wheel+252,true);
@@ -88,20 +97,24 @@ function labTuneStep(memory,car,settings,boost,afterStep=false,actions={}){
   }
   if(!afterStep&&settings.jump>0&&actions.state){
     const state=actions.state;
-    if(data.getUint32(20,true)){state.cooldown=0;state.initialJumpSequence=null;state.jumpSequence=actions.jumpSequence;}
+    if(data.getUint32(20,true)){state.cooldown=0;state.airCooldown=0;state.airJumpsUsed=0;state.groundedTicks=0;state.initialJumpSequence=null;state.jumpSequence=actions.jumpSequence;}
     else{
     state.cooldown=Math.max(0,(state.cooldown||0)-1);
+    state.airCooldown=Math.max(0,(state.airCooldown||0)-1);
     const fresh=Number.isSafeInteger(actions.jumpSequence)&&actions.jumpSequence!==state.jumpSequence;
     const frame=data.getUint32(car+172,true);
     const expiredInitialPress=state.initialJumpSequence===actions.jumpSequence&&frame>20;
     const pressed=fresh&&!expiredInitialPress;
     const grounded=[0,1,2,3].filter(index=>data.getUint8(wheels+284*index+84)).length>=2;
+    state.groundedTicks=grounded?(state.groundedTicks||0)+1:0;
+    if(state.groundedTicks>=20)state.airJumpsUsed=0;
     // A newly started car has no raycast contacts until its first solver step.
     // Keep that initial press for at most 20 ticks; later airborne presses expire.
     const waitingForFirstContact=pressed&&!grounded&&frame<=20&&state.cooldown===0&&!data.getUint32(20,true);
     if(waitingForFirstContact)state.initialJumpSequence=actions.jumpSequence;
     else{state.jumpSequence=actions.jumpSequence;state.initialJumpSequence=null;}
-    if(pressed&&state.cooldown===0&&grounded&&!data.getUint32(20,true)){data.setFloat32(body+316,data.getFloat32(body+316,true)+settings.jump,true);state.cooldown=750;}
+    if(pressed&&state.cooldown===0&&grounded&&!data.getUint32(20,true)){data.setFloat32(body+316,data.getFloat32(body+316,true)+settings.jump,true);state.cooldown=750;state.airCooldown=150;}
+    else if(pressed&&!grounded&&frame>20&&state.airCooldown===0&&(state.airJumpsUsed||0)<Math.max(0,Math.min(3,Math.round(settings.airJumps||0)))){data.setFloat32(body+316,data.getFloat32(body+316,true)+settings.jump,true);state.airJumpsUsed=(state.airJumpsUsed||0)+1;state.airCooldown=150;}
     }
   }
   if(!afterStep&&settings.coasting>0&&!data.getUint32(4,true)&&!data.getUint32(8,true)&&[0,1,2,3].some(index=>data.getUint8(wheels+284*index+84))){const factor=Math.exp(-settings.coasting*0.001);for(const offset of [312,316,320])data.setFloat32(body+offset,data.getFloat32(body+offset,true)*factor,true);}

@@ -1,12 +1,12 @@
 {
   "name": "polytrack-lab",
   "productName": "PolyTrack Lab",
-  "version": "1.3.1",
+  "version": "1.4.0",
   "private": true,
   "description": "Local physics playground for the supplied PolyTrack 0.6.3 distribution",
   "scripts": {
     "start": "node serve.cjs",
-    "test": "node tests/api.test.mjs && node tests/experiments.test.mjs && node tests/physics.cjs && node tests/setups.cjs && node tests/network.test.cjs && node tests/analytics.test.cjs && node tests/sync-weekly.test.mjs && node tests/leaderboard-snapshots.test.mjs && node tests/leaderboard-ui.test.mjs && node tests/public-replays.test.mjs && node tests/public-replay-assets.test.mjs && node tests/server.test.cjs && node tests/runway.cjs && node tests/package-size.cjs",
+    "test": "node tests/api.test.mjs && node tests/experiments.test.mjs && node tests/course-codec.test.cjs && node tests/course-runtime.test.cjs && node tests/physics.cjs && node tests/setups.cjs && node tests/network.test.cjs && node tests/analytics.test.cjs && node tests/sync-weekly.test.mjs && node tests/leaderboard-snapshots.test.mjs && node tests/leaderboard-ui.test.mjs && node tests/public-replays.test.mjs && node tests/public-replay-assets.test.mjs && node tests/server.test.cjs && node tests/runway.cjs && node tests/package-size.cjs",
     "refresh-weekly": "node --use-system-ca scripts/sync-weekly.mjs",
     "resume-replays": "node --use-system-ca scripts/sync-public-replays.mjs --resume",
     "refresh-replays": "node --use-system-ca scripts/sync-public-replays.mjs",

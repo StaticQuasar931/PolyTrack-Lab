@@ -89,5 +89,9 @@
 #ui .lab-ghost-check{font:20px Arial,sans-serif;flex:0 0 22px;color:#c6e7ff}
 #ui .lab-public-row[role=button]{cursor:pointer}
 #ui .lab-public-row[role=button]:focus-visible{outline:2px solid #bdeaff;outline-offset:-3px}
+#ui .lab-car-thumbnail{display:block;flex:0 0 50px;width:50px;height:50px;object-fit:contain;pointer-events:none;background:transparent}
+#ui .lab-public-row[data-replay-status=unavailable] .lab-car-thumbnail,#ui .lab-public-row[data-replay-status=unavailable] .lab-ghost-check{opacity:.4}
+#ui .lab-public-flag{width:28px;height:21px;object-fit:contain;margin-right:7px;vertical-align:middle;filter:drop-shadow(1px 1px 1px #0008)}
+@media(max-width:620px){#ui .lab-car-thumbnail{flex-basis:40px;width:40px;height:40px}#ui .leaderboard-ui[data-lab-leaderboard] .lab-public-row{gap:6px}}
 
 /* Selected ghost lanes keep the native result rhythm and spacing. */

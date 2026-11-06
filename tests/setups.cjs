@@ -14,14 +14,14 @@ const oldKey=Object.entries(oldProfile).map(([key,value])=>`${key}:${value}`).jo
 assert.equal(lab.getPhysicsKey(),oldKey,'Existing tuning profile score keys must stay unchanged');
 assert.equal(lab.getSettings().jump,0);assert.equal(lab.getSettings().handbrake,0);
 assert.equal(lab.presets.length,8);
-const normalMaxima={acceleration:5,reverse:5,braking:5,grip:3,steering:2,downforce:5,coasting:5,maxSpeed:1500,boost:5,handbrake:5,jump:20,gravity:2};
-const extendedMaxima={acceleration:10,reverse:10,braking:10,grip:5,steering:2,downforce:10,coasting:10,maxSpeed:3000,boost:10,handbrake:5,jump:40,gravity:4};
+const normalMaxima={acceleration:5,reverse:5,braking:5,grip:3,steering:2,downforce:5,coasting:5,maxSpeed:1500,boost:5,handbrake:5,jump:20,airJumps:3,gravity:2};
+const extendedMaxima={acceleration:10,reverse:10,braking:10,grip:5,steering:2,downforce:10,coasting:10,maxSpeed:3000,boost:10,handbrake:5,jump:40,airJumps:3,gravity:4};
 for(const field of lab.fields){assert.equal(field.normalMax,normalMaxima[field.key]);assert.equal(field.max,extendedMaxima[field.key]);}
 assert.equal(lab.presets.find(p=>p.id==='standard').name,'Original');
 for(const [index,id] of ['standard','arcade','drift','rocket','gentle','stunt','lowgravity'].entries()){const preset=lab.presets.find(p=>p.id===id);assert.equal(preset.presetId,index);assert.equal(lab.getSetupIdentity(preset.values).presetId,index);}
 assert.equal(lab.getSetupIdentity({...lab.getDefaults(),acceleration:1.7}).presetId,null);
 assert(lab.describeSettings({...lab.getDefaults(),gravity:.25}).includes('Gravity 0.25'));
-const enabled=lab.enableAllMechanics(lab.getDefaults());assert(enabled.boost>0&&enabled.handbrake>0&&enabled.jump>0);assert.equal(lab.getSettings().boost,0,'Enable-all returns a draft without applying it');
+const enabled=lab.enableAllMechanics(lab.getDefaults());assert(enabled.boost>0&&enabled.handbrake>0&&enabled.jump>0&&enabled.airJumps===1);assert.equal(lab.getSettings().boost,0,'Enable-all returns a draft without applying it');
 const seeded=lab.getSetupHistory();assert(seeded.length>0);assert.equal(seeded[0].reason,'initial');
 assert.equal(seeded[0].saveNumber,1);
 for(let index=0;index<25;index++)lab.recordAppliedSetup({...lab.getDefaults(),acceleration:1+index/100});
@@ -82,3 +82,7 @@ nativeCodes='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').filter(letter=>!['N','J'].inc
 nativeCodes='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(letter=>'Key'+letter);dynamic.lab.reconcileBindings();dynamicKey('KeyJ');assert.equal(dynamic.lab.consumeJumpStart(),false,'A fully reserved keyboard cannot queue a Lab jump');assert.equal(dynamicWorker.messages.at(-1).boost,false);
 storage.set('polytrack-lab.bindings.v1',JSON.stringify({boost:'KeyF',handbrake:'KeyN',jump:'KeyJ'}));const loadedConflict=open(['KeyF']);assert.equal(loadedConflict.lab.getBindings().boost,'KeyF','Stored custom keys survive loading until conflict reconciliation');loadedConflict.lab.reconcileBindings();assert.equal(loadedConflict.lab.getBindings().boost,'KeyB');assert.equal(open(['KeyF']).lab.getBindings().boost,'KeyB','Automatic replacement persists');
 console.log('Presets, numeric identity, bounded setup history, saved setups, editable bindings, input scenes, jump starts and old score-key migration: PASS');
+const airborneSetup=open().lab;airborneSetup.saveSettings({...airborneSetup.getDefaults(),jump:8,airJumps:1.6});assert.equal(airborneSetup.getSettings().airJumps,2,'Air-jump counts normalize to whole presses');assert(airborneSetup.getPhysicsKey().includes('airJumps:2'));assert.equal(airborneSetup.replayEnabled(),false);assert.equal(open().lab.getSettings().airJumps,2,'Air-jump counts persist');airborneSetup.saveSettings(airborneSetup.getDefaults());assert.equal(airborneSetup.getPhysicsKey(),'stock');
+const course=open(),baseValues=JSON.stringify(course.lab.getSettings());assert.throws(()=>course.lab.sendCourseSettings({gravity:.25}),/Open a Lab course/);course.lab.getActiveCourse=()=>({id:'fixture'});const courseWorker=new course.context.Worker('simulation_worker.bundle.js');course.lab.sendCourseSettings({gravity:.25,grip:.5,acceleration:2});assert.equal(courseWorker.messages.at(-1).labCourseSettings.gravity,.25);assert.equal(courseWorker.messages.at(-1).labCourseSettings.grip,.5);assert.equal(courseWorker.messages.at(-1).labCourseSettings.acceleration,2);assert.equal(JSON.stringify(course.lab.getSettings()),baseValues,'Course sections never overwrite saved physics');assert.throws(()=>course.lab.sendCourseSettings({downforce:2}),/cannot change aerodynamic/);assert.throws(()=>course.lab.sendCourseSettings({gravity:NaN}),/Invalid live course/);assert.throws(()=>course.lab.sendCourseSettings({airJumps:1.5}),/Invalid live course/);courseWorker.terminate();
+const inactiveCourse=open(),oldCourseWorker=new inactiveCourse.context.Worker('simulation_worker.bundle.js');inactiveCourse.lab.getActiveCourse=()=>({id:'fixture'});assert.throws(()=>inactiveCourse.lab.sendCourseSettings({gravity:.25}),/Restart the game/);oldCourseWorker.terminate();
+console.log('Integer air-jump saves and live-course messages preserve local settings and reject unsafe transitions: PASS');

@@ -12,7 +12,8 @@
     {key:'maxSpeed',label:'Speed limit',min:0,max:1500,step:10,default:0,unit:' km/h',description:'Caps the car’s total velocity. Zero keeps the original uncapped behavior.',left:'0 = original',right:'1500 km/h'},
     {key:'boost',label:'Boost power',min:0,max:5,step:0.1,default:0,unit:'×',description:'Hold B while accelerating to add engine power. Zero disables boost. Boost runs save times; ghosts and replays are unavailable.',left:'Off',right:'Strong boost'},
     {key:'handbrake',label:'Handbrake strength',min:0,max:5,step:0.1,default:0,unit:'×',description:'Hold N to brake the rear wheels and loosen their grip for sliding. Zero disables this extra control. Enabled runs save times without ghosts or replays.',left:'Off',right:'Strong rear brake'},
-    {key:'jump',label:'Jump strength',min:0,max:20,step:0.5,default:0,unit:' m/s',description:'Press J with at least two wheels grounded to add upward velocity. A 0.75 second cooldown prevents repeated jumps. Zero disables jumping. Enabled runs save times without ghosts or replays.',left:'Off',right:'High jump'},
+    {key:'jump',label:'Jump strength',min:0,max:20,step:0.5,default:0,unit:' m/s',description:'Press J to jump from the road. Air jumps can add extra presses in the air. Zero disables jumping. Enabled runs save times without ghosts or replays.',left:'Off',right:'High jump'},
+    {key:'airJumps',label:'Air jumps',min:0,max:3,step:1,default:0,unit:' extra',description:'Extra jumps before landing: 1 gives a double jump, 2 a triple jump. Requires Jump strength above zero. Press the jump key again in the air; landing recharges the extra jumps.',left:'0 = road only',right:'3 extra jumps'},
     {key:'gravity',label:'Gravity',min:0,max:2,step:0.05,default:1,unit:'×',description:'Scales the real downward gravitational force. Low values make airtime longer; zero removes gravity. Downforce remains a separate setting.',left:'Weightless',right:'Heavy'}
   ];
   // The workshop starts with the original practical ranges. Extended mode can
@@ -20,11 +21,11 @@
   const extendedMaxima={acceleration:10,reverse:10,braking:10,grip:5,downforce:10,coasting:10,maxSpeed:3000,boost:10,jump:40,gravity:4};
   for(const field of fields){field.normalMax=field.max;field.max=extendedMaxima[field.key]??field.max;}
   const storageKey='polytrack-lab.physics.v1';
-  const normalize = input => Object.fromEntries(fields.map(f => [f.key, typeof input?.[f.key] === 'number' && Number.isFinite(input[f.key]) ? Math.min(f.max, Math.max(f.min, input[f.key])) : f.default]));
+  const normalize = input => Object.fromEntries(fields.map(f => {const value=typeof input?.[f.key] === 'number' && Number.isFinite(input[f.key]) ? Math.min(f.max, Math.max(f.min, input[f.key])) : f.default;return [f.key,f.key==='airJumps'?Math.round(value):value];}));
   let settings;
   try { settings=normalize(JSON.parse(localStorage.getItem(storageKey)||'null')); } catch { settings=normalize(null); }
   // Preserve keys for existing v1 profiles when the two new mechanics are off.
-  const fingerprint = s => fields.every(f=>s[f.key]===f.default) ? 'stock' : fields.filter(f=>!['handbrake','jump','gravity'].includes(f.key)||s[f.key]!==f.default).map(f=>`${f.key}:${s[f.key]}`).join('|');
+  const fingerprint = s => fields.every(f=>s[f.key]===f.default) ? 'stock' : fields.filter(f=>!['handbrake','jump','gravity','airJumps'].includes(f.key)||s[f.key]!==f.default).map(f=>`${f.key}:${s[f.key]}`).join('|');
   const replayEnabled = () => settings.boost===0&&settings.handbrake===0&&settings.jump===0;
   const preset = (id,name,description,values) => ({id,name,description,values:normalize(values)});
   const presets=[
@@ -62,7 +63,7 @@
     return {kind:'custom',presetId:null,id:'custom',name,label:name,fingerprint:key,...(saved?{savedSetupId:saved.id}:{})};
   };
   const describeSettings=(input=settings)=>{const values=normalize(input),changed=fields.filter(field=>values[field.key]!==field.default);return changed.length?changed.map(field=>field.label+' '+values[field.key]+field.unit).join(', '):'Original physics';};
-  const enableAllMechanics=(input=settings)=>{const values=normalize(input);return {...values,boost:Math.max(1,values.boost),handbrake:Math.max(1,values.handbrake),jump:Math.max(8,values.jump)};};
+  const enableAllMechanics=(input=settings)=>{const values=normalize(input);return {...values,boost:Math.max(1,values.boost),handbrake:Math.max(1,values.handbrake),jump:Math.max(8,values.jump),airJumps:Math.max(1,values.airJumps)};};
   const historyKey='polytrack-lab.setup-history.v1';
   const historyCounterKey='polytrack-lab.setup-history-counter.v1';
   const getSetupHistory=()=>{
@@ -106,7 +107,7 @@
   const updateBindingDescriptions=()=>{
     fields.find(field=>field.key==='boost').description='Hold '+getBindingLabel('boost')+' while accelerating to add engine power. Zero disables boost. Boost runs save times; ghosts and replays are unavailable.';
     fields.find(field=>field.key==='handbrake').description='Hold '+getBindingLabel('handbrake')+' to brake the rear wheels and loosen their grip for sliding. Zero disables this extra control. Enabled runs save times without ghosts or replays.';
-    fields.find(field=>field.key==='jump').description='Press '+getBindingLabel('jump')+' with at least two wheels grounded to add upward velocity. A 0.75 second cooldown prevents repeated jumps. Zero disables jumping. Enabled runs save times without ghosts or replays.';
+    fields.find(field=>field.key==='jump').description='Press '+getBindingLabel('jump')+' to jump from the road. Air jumps can add extra presses in the air. Road jumps recharge after 0.75 seconds; air jumps need separate presses at least 0.15 seconds apart. Zero disables jumping. Enabled runs save times without ghosts or replays.';
     presets.find(entry=>entry.id==='stunt').description=getBindingLabel('boost')+' to boost, '+getBindingLabel('handbrake')+' to slide, '+getBindingLabel('jump')+' to jump. A playful setup for open tracks.';
   };
   const publishBindings=notice=>{bindingNotice=notice;if(window.PolyTrackLab)window.PolyTrackLab.bindingNotice=notice;updateBindingDescriptions();onBindingsChanged();if(typeof window.dispatchEvent==='function'&&typeof CustomEvent==='function')window.dispatchEvent(new CustomEvent('polytrack-lab-bindings-changed',{detail:getBindings()}));return getBindings();};
@@ -123,6 +124,7 @@
   updateBindingDescriptions();
   const NativeWorker=window.Worker;
   const workers=new Set();
+  const courseWorkers=new Map();
   let boostHeld=false,handbrakeHeld=false,jumpSequence=0,jumpStartPending=false;
   const inGameScene=()=>{const scene=document.body?.dataset?.labScene;return scene===undefined||scene===''||scene==='game';};
   const consumeJumpStart=()=>{const pending=jumpStartPending;jumpStartPending=false;return pending&&settings.jump>0&&isMechanicBindingEnabled('jump')&&inGameScene();};
@@ -130,18 +132,28 @@
     constructor(url,options){
       const target=new URL(url,location.href);
       const physics=target.pathname.endsWith('/simulation_worker.bundle.js');
-      if(physics){target.pathname=target.pathname.replace(/simulation_worker\.bundle\.js$/,'lab-physics-worker.js');target.searchParams.set('lab','1.2.0');target.hash=encodeURIComponent(JSON.stringify(settings));}
+      const dynamicCourse=physics&&!!window.PolyTrackLab?.getActiveCourse?.();
+      if(physics){target.pathname=target.pathname.replace(/simulation_worker\.bundle\.js$/,'lab-physics-worker.js');target.searchParams.set('lab','1.4.0');target.hash=encodeURIComponent(JSON.stringify({...settings,...(dynamicCourse?{_dynamicCourse:true}:{})}));}
       super(physics?target.href:url,options);
-      if(physics){workers.add(this);this.postMessage({labPhysics:true,boost:boostHeld,handbrake:handbrakeHeld,jumpSequence});}
+      if(physics){workers.add(this);if(dynamicCourse)courseWorkers.set(this,settings.downforce);this.postMessage({labPhysics:true,boost:boostHeld,handbrake:handbrakeHeld,jumpSequence});}
     }
-    terminate(){workers.delete(this);super.terminate();}
+    terminate(){workers.delete(this);courseWorkers.delete(this);super.terminate();}
+  };
+  const sendCourseSettings=input=>{
+    if(!window.PolyTrackLab?.getActiveCourse?.())throw Error('Open a Lab course before changing its live physics.');
+    if(!input||typeof input!=='object'||Array.isArray(input))throw Error('Invalid live course settings.');
+    for(const [key,value] of Object.entries(input)){const field=fields.find(field=>field.key===key);if(!field||typeof value!=='number'||!Number.isFinite(value)||value<field.min||value>field.max||key==='airJumps'&&!Number.isInteger(value))throw Error('Invalid live course setting: '+key);}
+    const next=normalize({...settings,...input});
+    for(const worker of workers){if(!courseWorkers.has(worker))throw Error('Restart the game to activate live course physics.');if(next.downforce!==courseWorkers.get(worker))throw Error('Live course sections cannot change aerodynamic downforce.');}
+    for(const worker of workers)worker.postMessage({labCourseSettings:next});
+    return {...next};
   };
   const sendActions=(cancelJump=false)=>{for(const worker of workers)worker.postMessage({labPhysics:true,boost:boostHeld,handbrake:handbrakeHeld,jumpSequence,cancelJump});};
   onBindingsChanged=()=>{boostHeld=false;handbrakeHeld=false;jumpStartPending=false;sendActions(true);};
   document.addEventListener('keydown',event=>{if(!inGameScene()||event.repeat||event.ctrlKey||event.altKey||event.metaKey||!getAllowedBindingCodes().includes(event.code)||/^(INPUT|TEXTAREA|SELECT)$/.test(event.target?.tagName)||event.target?.isContentEditable)return;if(event.code===bindings.boost&&settings.boost>0)boostHeld=true;else if(event.code===bindings.handbrake&&settings.handbrake>0)handbrakeHeld=true;else if(event.code===bindings.jump&&settings.jump>0){jumpSequence++;jumpStartPending=true;}else return;sendActions();});
   document.addEventListener('keyup',event=>{if(event.code===bindings.boost)boostHeld=false;else if(event.code===bindings.handbrake)handbrakeHeld=false;else return;sendActions();});
   window.addEventListener('blur',()=>{boostHeld=false;handbrakeHeld=false;jumpStartPending=false;sendActions(true);});
-  window.PolyTrackLab={...(window.PolyTrackLab||{}),fields,presets,getSavedSetups,saveSetup,deleteSetup,randomizeSettings,consumeJumpStart,getBindings,setBindings,reconcileBindings,bindingNotice,isMechanicBindingEnabled,getBindingLabel,getAllowedBindingCodes,getSetupIdentity,describeSettings,enableAllMechanics,getSetupHistory,recordAppliedSetup,getActiveSetupHistoryEntry,getSettings:()=>({...settings}),canReplay:replayEnabled,replayEnabled,getPhysicsKey:()=>fingerprint(settings),getDefaults:()=>normalize(null),
+  window.PolyTrackLab={...(window.PolyTrackLab||{}),fields,presets,getSavedSetups,saveSetup,deleteSetup,randomizeSettings,consumeJumpStart,getBindings,setBindings,reconcileBindings,bindingNotice,isMechanicBindingEnabled,getBindingLabel,getAllowedBindingCodes,getSetupIdentity,describeSettings,enableAllMechanics,getSetupHistory,recordAppliedSetup,getActiveSetupHistoryEntry,sendCourseSettings,getSettings:()=>({...settings}),canReplay:replayEnabled,replayEnabled,getPhysicsKey:()=>fingerprint(settings),getDefaults:()=>normalize(null),
     saveSettings(input){const next=normalize(input);localStorage.setItem(storageKey,JSON.stringify(next));settings=next;return {...settings};},
     applySettings(input){
       const previous={...settings};this.saveSettings(input);

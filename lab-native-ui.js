@@ -74,7 +74,7 @@
     for(const image of ui.querySelectorAll('img[src$="logo.svg"]'))image.alt='PolyTrack Lab';
     for(const best of ui.querySelectorAll('.track-info-ui .personal-best')){const row=best.children[1];if(row&&!row.classList.contains('lab-pb-setup-row')){row.classList.add('lab-pb-setup-row');const icon=document.createElement('img');icon.src='images/lab.svg';icon.alt='';const name=document.createElement('span');name.className='lab-pb-setup';name.textContent=lab.getSetupIdentity().label;name.title='Current physics setup';row.replaceChildren(icon,name);}}
     if(lab.replayEnabled?.()===false)for(const button of ui.querySelectorAll('button'))if(/^(Watch|Watch replay)$/.test(button.textContent.trim())){
-      if(!button.disabled)button.disabled=true;
+      if(button.dataset.labPublicSelection==='true')continue;if(!button.disabled)button.disabled=true;
       button.title='Extra controls save time and setup. Their input format does not support replay playback.';
     }
     if(lab.replayEnabled?.()===false){
@@ -82,18 +82,18 @@
     }
     for(const note of ui.querySelectorAll('.track-info-ui .no-opponents'))text(note,lab.replayEnabled?.()===false?'Times and setups save locally. Extra control runs do not have replay playback.':'Click a saved time for its physics and replay actions.');
     const hint=document.getElementById('lab-mechanics-hint');
-    if(hint){const config=lab.getSettings();const keys=[];if(race&&!runLabel){const identity=lab.getSetupIdentity(config),save=lab.getSetupHistory()[0];runLabel=identity.label+(save?.saveNumber?' · Save #'+save.saveNumber:'');}for(const [action,label] of [['boost','Boost'],['handbrake','Slide'],['jump','Jump']])if(config[action]>0)keys.push((lab.isMechanicBindingEnabled?.(action)===false?'Choose a free key':lab.getBindingLabel(action))+' '+label);text(hint,[runLabel,...keys].filter(Boolean).join(' · '));hint.hidden=!race;}
+    if(hint){const config=lab.getSettings();const keys=[];if(race&&!runLabel){const identity=lab.getSetupIdentity(config),save=lab.getSetupHistory()[0];runLabel=identity.label+(lab.getActiveCourse?.()?" · Course rules":"")+(save?.saveNumber?' · Save #'+save.saveNumber:'');}for(const [action,label] of [['boost','Boost'],['handbrake','Slide'],['jump','Jump']])if(config[action]>0)keys.push((lab.isMechanicBindingEnabled?.(action)===false?'Choose a free key':lab.getBindingLabel(action))+' '+label);if(config.airJumps>0)keys.push(config.airJumps+" air jump"+(config.airJumps===1?"":"s"));text(hint,[runLabel,...keys].filter(Boolean).join(' · '));hint.hidden=!race;}
   }
   function ensureRunway(menu){
     const wrapper=menu.querySelector('.track-selection-ui .tracks-container.no-group-containers > .wrapper');if(!wrapper)return;
-    const id='cd9bcb8f107d4de733ecf5c59daaed2d9b83ecb80f790c8e897fc830af28e6dd';
+    const id='a43aa6d8ca1cb0366f40954ec42b4441fefdb4c01f761051bc11dd5d8591eec1';
     if(lab.isExtraTrackSaved?.({trackId:id})){wrapper.querySelector('.lab-runway-entry')?.remove();return;}
     if(wrapper.querySelector('.lab-runway-entry'))return;
     const card=document.createElement('div');card.className='track lab-runway-entry';
     const button=document.createElement('button');button.type='button';button.className='button';
-    const title=document.createElement('div');title.className='track-title';const name=document.createElement('p');name.textContent='Lab Runway XL';title.append(name);
-    const image=document.createElement('img');image.className='thumbnail';image.src='lab-tracks/runway.svg';image.alt='';
-    const note=document.createElement('div');note.className='record';note.textContent='Runway & ramps';button.append(title,image,note);card.append(button);
+    const title=document.createElement('div');title.className='track-title';const name=document.createElement('p');name.textContent='Lab Runway: Desert Circuit';title.append(name);
+    const image=document.createElement('img');image.className='thumbnail';image.src='lab-tracks/runway.svg?v=3';image.alt='';
+    const note=document.createElement('div');note.className='record';note.textContent='3 km · 5 checkpoints';button.append(title,image,note);card.append(button);
     wrapper.querySelector('.lab-extra-entry')?.after(card);
     button.addEventListener('click',async()=>{
       button.disabled=true;note.textContent='Preparing the runway…';

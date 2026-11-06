@@ -63,9 +63,9 @@
     const presetName = presetId !== null ? presetNames[presetId] : values ? 'Custom' : 'Unknown legacy setup';
     return { metadataVersion: 2, physicsKey: key, physicsValues: values ? { ...values } : null,
       presetId, presetName, setupName: typeof identity?.name === 'string' ? identity.name : presetName,
-      setupLabel: typeof identity?.label === 'string' ? identity.label : presetId !== null ? `${presetId} · ${presetName}` : presetName,
+      setupLabel: (typeof identity?.label === 'string' ? identity.label : presetId !== null ? `${presetId} · ${presetName}` : presetName)+(String(key).includes('~course:')?' · Course rules':''),
       physicsLabel: presetName, setupHistoryId,
-      replayAvailable: !!values && values.boost === 0 && values.handbrake === 0 && values.jump === 0 };
+      replayAvailable: !!values && !String(key).includes('~course:') && values.boost === 0 && values.handbrake === 0 && values.jump === 0 };
   }
   lab.getCurrentSetupDescriptor = () => {
     const key = profileKey();
@@ -73,6 +73,7 @@
     try { values = lab.getSettings ? normalizedPhysics(lab.getSettings()) : decodeLegacyPhysics(key); } catch {}
     try { history = lab.getActiveSetupHistoryEntry?.(); } catch {}
     return { ...setupDescriptor(key, values, typeof history?.id === 'string' ? history.id : null),
+      ...(lab.getActiveCourse?.()?{courseRules:Object.fromEntries(['name','author','notes','physics','checkpoints','objects'].map(key=>[key,lab.getActiveCourse()[key]]))}:{}),
       setupSaveNumber: Number.isSafeInteger(history?.saveNumber) ? history.saveNumber : null,
       saveNumber: Number.isSafeInteger(history?.saveNumber) ? history.saveNumber : null };
   };
@@ -88,7 +89,7 @@
     const values = normalizedPhysics(record.physicsValues, true) || decodeLegacyPhysics(key);
     const descriptor = setupDescriptor(key, values, typeof record.setupHistoryId === 'string' ? record.setupHistoryId : null);
     const saveNumber = Number.isSafeInteger(record.setupSaveNumber ?? record.saveNumber) ? record.setupSaveNumber ?? record.saveNumber : null;
-    return { ...descriptor, setupSaveNumber: saveNumber, saveNumber,
+    return { ...descriptor, setupSaveNumber: saveNumber, saveNumber, ...(record.courseRules?{courseRules:record.courseRules}:{}),
       setupName: typeof record.setupName === 'string' ? record.setupName : descriptor.setupName,
       setupLabel: typeof record.setupLabel === 'string' ? record.setupLabel : descriptor.setupLabel };
   }
@@ -137,7 +138,7 @@
       const previous = read(RUN_HISTORY_KEY, []), history = Array.isArray(previous) ? previous : [];
       history.unshift({ runId: record.runId, recordId: record.id, trackId: record.trackId, name: record.name,nickname:record.nickname,
         timeMs: record.frames, date: record.date, physicsKey: record.physicsKey, physicsValues: record.physicsValues,
-        presetId: record.presetId, presetName: record.presetName, setupLabel: record.setupLabel,
+        presetId: record.presetId, presetName: record.presetName, setupLabel: record.setupLabel,...(record.courseRules?{courseRules:record.courseRules}:{}),
         setupHistoryId: record.setupHistoryId, setupSaveNumber: record.setupSaveNumber, saveNumber: record.saveNumber, isPersonalBest,
         isSetupBest: record.isSetupBest, captureSource: record.captureSource, verification: 'local',
         replayAvailable: record.replayAvailable,
@@ -174,6 +175,7 @@
       });
   };
   lab.restoreRunSettings = record => {
+    if(String(record?.physicsKey).includes('~course:')){if(!lab.restoreCourseRun)throw Error('Course restoration is still loading.');return lab.restoreCourseRun(record);}
     const values = normalizedPhysics(record?.physicsValues, true) || decodeLegacyPhysics(record?.physicsKey);
     if (!values) throw Error('This legacy setup has no complete physics settings to restore');
     if (typeof lab.applySettings !== 'function') throw Error('The physics settings are still starting');
@@ -286,10 +288,17 @@
     };
   };
   lab.attachRuntime = value => { runtime = value; window.dispatchEvent(new CustomEvent('polytrack-lab-runtime-ready')); };
+  lab.ensureGhostsVisible=()=>runtime?.ensureGhostsVisible?.();
+  lab.renderCarThumbnail=style=>{if(!types||!runtime?.renderCarThumbnail)return Promise.resolve('');return runtime.renderCarThumbnail(typeof style==='string'?types.CarStyle.deserializeSafe(style):style);};
+  lab.getLocalCarStyle=record=>findRawLocalRun(record.runId,record.trackId,record.physicsKey)?.record?.carStyle||null;
+  lab.getCourseScene=()=>runtime?.getScene?.();
+  lab.getCourseThree=()=>runtime?.three;
+  lab.getEditorTrackCode=()=>{const exporter=lab.editorActions?.exportTrack||lab.trackActions?.exportTrack;if(!exporter)throw Error('Open a track or the editor first.');return exporter();};
+  lab.inspectCourseCode=code=>{if(!runtime)throw Error('The game is still starting.');const parsed=runtime.parseTrack(code);if(!parsed)throw Error('Invalid PolyTrack course.');return {trackId:parsed.trackData.getId(),name:parsed.trackMetadata.name,author:parsed.trackMetadata.author};};
   lab.getNativeReservedBindingCodes=()=>runtime?.getNativeReservedCodes?.()||[];
   function parseTrackCode(code, expectedTrackId = null) {
     if (!runtime) throw Error('The game is still starting. Please try again.');
-    if (typeof code !== 'string' || code.length > 2 * 1024 * 1024 || !/^PolyTrack[0-9A-Za-z+/_=-]+$/.test(code.trim())) throw Error('Invalid PolyTrack course code');
+    if (typeof code !== 'string' || code.length > 4 * 1024 * 1024 || !/^PolyTrack[0-9A-Za-z+/_=-]+$/.test(code.trim())) throw Error('Invalid PolyTrack course code');
     if (expectedTrackId !== null && !/^[a-f0-9]{64}$/.test(expectedTrackId)) throw Error('Invalid expected track identity');
     const parsed = runtime.parseTrack(code.trim());
     if (!parsed) throw Error('This course code is not supported by PolyTrack 0.6.3');
@@ -303,6 +312,7 @@
     const parsed = parseTrackCode(code, expectedTrackId);
     runtime.playTrack(parsed.trackMetadata, parsed.trackData); return parsed;
   };
+  lab.saveCourseCode=code=>parseTrackCode(code);
   lab.watchTrackCode = (code, entries, expectedTrackId = null) => {
     if (!Array.isArray(entries) || !entries.length || entries.length > 10 || entries.some(entry => !entry?.recording || !entry.carStyle ||
       !Number.isSafeInteger(entry.time?.numberOfFrames) || entry.time.numberOfFrames <= 0 || typeof entry.nickname !== 'string')) throw Error('Choose a valid replay to watch');
