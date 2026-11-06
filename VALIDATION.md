@@ -53,3 +53,11 @@ Version 1.4 checks:
 - Six visible public results loaded genuine 200px thumbnails from the native car renderer. Selecting JerrtHu and RedBull updated native Opponents/Watch/Play, and native Play displayed both semi-transparent ghost cars beside the player's car. Existing pattern assets are unchanged.
 - Extra Tracks exposed Submit a track. The dialog copied a package containing the selected native course and physics recommendation. Contact links match Static's published site. No email or form was submitted and no track was uploaded.
 - The existing GitHub Pages run was inspected read-only: build succeeded, deployment failed with "Timeout reached, aborting!". No deployment settings were changed and the run was not rerun. The public .nojekyll file supports direct static hosting when Pages uses a branch.
+
+Version 1.5 checks:
+
+- The complete automated suite passes with 26 controls, three tuning ranges, automatic boost, separate jump recharge settings, and unlimited fresh-press air jumps. Existing Original and preset fingerprints and published 1.4 course rule keys retain their identities.
+- Native WebAssembly tests verify scaled chassis hulls and real wheel radius, contact spacing, wheelbase, and suspension. Inverted airborne cars demonstrate actual chassis collisions. Original remains byte-identical, and combined Sandbox maxima remain finite and deterministic for 10,000 steps. Acceleration is finite up to 1,000x; speed limit 0 removes the added velocity cap.
+- Rendering tests cover local chassis axes, wheel alignment, native mirrored wheel scales, repeated updates, reset behavior, preview isolation, and size-aware follow/cockpit cameras. Wheel width is explicitly appearance-only.
+- An isolated software-rendered Chrome browser opened Vehicle studio, rendered the native car preview, applied Monster wheels, selected Sandbox, and saved acceleration 1,000x, automatic boost, and unlimited air jumps. All three settings survived the real Apply/reload transition. A 2x car with 1.7x wheel radius and 1.8x tire width loaded and drove in Summer 1 with the adjusted camera.
+- No new application errors occurred in these flows. Kodub's live weekly request was blocked by its cross-origin response in the local preview; bundled weekly files remain available. Browser screenshots and test browser data stay outside the public repository.

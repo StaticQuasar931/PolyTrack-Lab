@@ -82,7 +82,7 @@
       if(object.type==='ring'){
         if(previous&&!passed.has(index)){const a=local(previous,object);if(a.z*p.z<=0&&Math.abs(a.z-p.z)>.001){const t=a.z/(a.z-p.z),x=a.x+(p.x-a.x)*t,y=a.y+(p.y-a.y)*t;if(x*x+y*y<=object.size*object.size)passed.add(index);}}
       }else if(Math.abs(p.x)<=object.size/2&&Math.abs(p.z)<=object.size/2&&Math.abs(p.y)<(object.type==='boost'?2:object.size/2)){
-        if(object.type==='boost')values.acceleration=Math.min(10,values.acceleration*object.strength);else values.gravity=object.strength;
+        if(object.type==='boost')values.acceleration=Math.min(lab.fields.find(field=>field.key==='acceleration').max,values.acceleration*object.strength);else values.gravity=object.strength;
       }
     }
     previous={x:position.x,y:position.y,z:position.z};try{send(values);const text=`Lab course · CP ${checkpoint} · Rings ${passed.size}/${context.objects.filter(o=>o.type==='ring').length} · Power ${values.acceleration}× · Gravity ${values.gravity}×`;if(note.textContent!==text)note.textContent=text;}catch(error){if(note.textContent!==error.message)note.textContent=error.message;}

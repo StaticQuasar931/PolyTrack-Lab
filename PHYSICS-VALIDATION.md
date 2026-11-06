@@ -41,7 +41,7 @@ Maximum velocity is applied before and after the solver step. The cap includes v
 
 The engine adapter is intentionally specific to the supplied 396,005-byte PolyTrack 0.6.3 binary. It verifies the injection location, original downforce instruction bytes, and WebAssembly validity before use. An incompatible engine throws a clear compatibility error. The code documents verified object layouts and checks memory bounds before accessing them.
 
-Car mass, suspension, and collision geometry are not offered as tunable settings. They require additional engine interface work and have not been validated. The fixture tests establish actual physics effects; they do not establish that every extreme combination will be easy to drive on every track. Low gravity increases airtime, and strong engine force or jumps can carry the car outside a track's landing area.
+Car mass, suspension stiffness, and damping stay native. Vehicle sizing now changes the actual collision hull and wheel layout as described below. The fixture tests establish actual physics effects; they do not establish that every extreme combination will be easy to drive on every track. Low gravity increases airtime, and strong engine force or jumps can carry the car outside a track's landing area.
 
 Settings are stored only in this browser's local storage for the site's origin. Clearing browser site data removes them. Hosting the game under a different origin creates a separate local profile.
 
@@ -54,3 +54,11 @@ The current canonical ID is `a43aa6d8ca1cb0366f40954ec42b4441fefdb4c01f761051bc1
 Air-jump fixtures at 12 m/s reached 6.9238 m with one road jump, 22.5580 m with one extra air jump, and 38.1860 m with two extras. Excess presses do not add more impulses. Separate-press timing, grounded recharge, restart state, and deterministic trajectories are tested.
 
 Lab course workers explicitly enable the adapter at startup, including when starting on Original values. Live messages validate known finite fields atomically and reject changes to baked downforce. Gravity explicitly restores the native 1x force after a low-gravity section. Tests cover live field changes, zone entry/exit restoration, ring-plane crossings, course-specific record keys and rule snapshots, corrupt stored data handling, and clean exit reloads. Ring gates are non-colliding bonus detectors; native checkpoints retain responsibility for respawning and finishing.
+
+## Vehicle geometry and expanded controls
+
+Vehicle sizing scales the native Init-message convex-hull vertices and center-of-mass offset before Bullet initializes its actual collision shape. It does not substitute a visual-only chassis. Existing Original initialization remains byte-identical. Verified native wheel connection coordinates, suspension rest length, and radius change independently before the solver step, using native baselines rather than compounding previous values. Tire width is appearance-only because the native wheel model uses raycasts.
+
+The native hull AABB doubles with a 2x scale. An inverted car with every wheel out of contact collides with the ground earlier when body height is doubled: chassis Y at 700 ms is 3.4449 m rather than 2.6488 m. Changing wheel radius from 0.5x to 2x changes the settled car origin from -0.0193 m to 0.4794 m. Combined body, wheel, spacing, wheelbase, and suspension settings repeat deterministically; minimum and maximum geometry combinations remain finite for 5,000 steps.
+
+The expanded finite tuning ceilings were exercised together for 10,000 native steps and repeated byte-identically. That fixture reached roughly 14,624 km/h and 11,196 m height. These are test outcomes, not promised performance on every course. Zero engine/grip/steering settings remain finite. Automatic boost with power 2 matches 3x acceleration, while manual boost off retains stock behavior. Unlimited air jumps still require separate presses and honor the chosen recharge. New default fields preserve earlier preset fingerprints and published version 1.4 Lab course rule identities.

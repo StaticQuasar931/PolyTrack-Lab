@@ -31,8 +31,9 @@
     for (const field of physicsFields()) {
       const value = input[field.key];
       if (value === undefined) { result[field.key] = field.default; continue; }
-      if (typeof value !== 'number' || !Number.isFinite(value) || strict && (value < field.min || value > field.max)) return null;
-      result[field.key] = Math.min(field.max, Math.max(field.min, value));
+      const integer=field.integer||field.key==='airJumps';
+      if (typeof value !== 'number' || !Number.isFinite(value) || strict && (value < field.min || value > field.max || integer && !Number.isInteger(value))) return null;
+      const bounded=Math.min(field.max,Math.max(field.min,value));result[field.key]=integer?Math.round(bounded):bounded;
     }
     return result;
   }
@@ -289,7 +290,8 @@
   };
   lab.attachRuntime = value => { runtime = value; window.dispatchEvent(new CustomEvent('polytrack-lab-runtime-ready')); };
   lab.ensureGhostsVisible=()=>runtime?.ensureGhostsVisible?.();
-  lab.renderCarThumbnail=style=>{if(!types||!runtime?.renderCarThumbnail)return Promise.resolve('');return runtime.renderCarThumbnail(typeof style==='string'?types.CarStyle.deserializeSafe(style):style);};
+  lab.renderCarThumbnail=(style,values=lab.getDefaults())=>{if(!types||!runtime?.renderCarThumbnail)return Promise.resolve('');return runtime.renderCarThumbnail(typeof style==='string'?types.CarStyle.deserializeSafe(style):style,normalizedPhysics(values,true)||lab.getDefaults());};
+  lab.renderVehiclePreview=values=>{if(!types||!runtime?.renderCarThumbnail)return Promise.resolve('');const normalized=normalizedPhysics(values,true);if(!normalized)throw Error('Enter valid dimensions to preview the car.');return runtime.renderCarThumbnail(runtime.getCurrentProfile?.()?.carStyle||types.CarStyle.default(),normalized);};
   lab.getLocalCarStyle=record=>findRawLocalRun(record.runId,record.trackId,record.physicsKey)?.record?.carStyle||null;
   lab.getCourseScene=()=>runtime?.getScene?.();
   lab.getCourseThree=()=>runtime?.three;

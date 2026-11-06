@@ -94,3 +94,15 @@
 @media(max-width:600px){.ptlab-field{grid-template-columns:1fr}.ptlab-field-top,.ptlab-value-row,.ptlab-slider,.ptlab-scale,.ptlab-field-effect,.ptlab-field-bottom{grid-column:1;grid-row:auto}.ptlab-field-label{font-size:24px}.ptlab-field-effect{font-size:16px}.ptlab-section-top{flex-wrap:wrap}.ptlab-lock-summary{white-space:normal}.ptlab-primary,.ptlab-secondary,.ptlab-text-button{font-size:18px}.ptlab-presets{gap:6px}.ptlab-preset{flex-basis:140px}.ptlab-saved-row{flex-wrap:wrap}}
 
 /* The workbench frame leaves the original menu surfaces in place. */
+.ptlab-vehicle-studio{margin:20px 0;padding:14px;background:#ffffff07;border-top:1px solid #ffffff25}
+.ptlab-vehicle-studio>summary{cursor:pointer;font-size:26px;padding:8px 0}
+.ptlab-vehicle-intro,.ptlab-range-help{font-size:17px;line-height:1.35;opacity:.8}
+.ptlab-vehicle-top{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.ptlab-vehicle-preview{width:220px;height:150px;object-fit:contain;background:#ffffff08}
+.ptlab-vehicle-choices{display:flex;gap:8px;flex-wrap:wrap;flex:1;min-width:230px}
+.ptlab-vehicle-choice{font:italic 19px ForcedSquare,Arial,sans-serif;padding:9px 13px}
+.ptlab-vehicle-preview-note{display:block;font-size:16px;margin:8px 0 16px;opacity:.8}
+.ptlab-range-mode{background:var(--button-color,#17234d);color:var(--text-color,#fff);font:20px ForcedSquare,Arial,sans-serif;padding:6px 10px;border:1px solid #ffffff30}
+.ptlab-value-box select.ptlab-number{width:250px;max-width:100%;font-size:18px}
+.ptlab-dialog input[type=number].ptlab-number{width:110px}
+.ptlab-slider[hidden],.ptlab-scale[hidden]{display:none}

@@ -41,7 +41,7 @@
   function physics(input){
     const controls=fields(),value=input===undefined?{}:object(input,controls.map(field=>field.key),'physics');
     const result={};
-    for(const field of controls)result[field.key]=own(value,field.key)?number(value[field.key],field.min,field.max,field.label||field.key,field.key==='airJumps'):field.default;
+    for(const field of controls)result[field.key]=own(value,field.key)?number(value[field.key],field.min,field.max,field.label||field.key,field.key==='airJumps'||field.integer===true):field.default;
     return result;
   }
   function chapters(input){
@@ -71,7 +71,7 @@
       if(entry.type==='ring'){
         if(entry.strength!==undefined&&!(typeof entry.strength==='number'&&Number.isFinite(entry.strength)))throw Error('Ring strength must be finite.');
         result.strength=1;
-      }else result.strength=number(entry.strength===undefined?defaults.strength:entry.strength,entry.type==='boost'?1:0,entry.type==='boost'?10:4,'Object strength');
+      }else result.strength=number(entry.strength===undefined?defaults.strength:entry.strength,entry.type==='boost'?1:0,entry.type==='boost'?1000:20,'Object strength');
       return result;
     });
   }
@@ -104,7 +104,10 @@
     return validateLabCourse(parsed);
   }
   function courseRuleKey(input){
-    const normalized=validateLabCourse(input),value=JSON.stringify({physics:normalized.physics,checkpoints:normalized.checkpoints,objects:normalized.objects});
+    const normalized=validateLabCourse(input),legacy=['acceleration','reverse','braking','grip','steering','downforce','coasting','maxSpeed','boost','handbrake','jump','airJumps','gravity'];
+    const physics=Object.fromEntries(legacy.map(key=>[key,normalized.physics[key]]));
+    for(const field of fields())if(!legacy.includes(field.key)&&normalized.physics[field.key]!==field.default)physics[field.key]=normalized.physics[field.key];
+    const value=JSON.stringify({physics,checkpoints:normalized.checkpoints,objects:normalized.objects});
     const seeds=[0x811c9dc5,0x9e3779b9,0x85ebca6b,0xc2b2ae35];
     const hash=seed=>{let result=seed>>>0;for(let index=0;index<value.length;index++)result=Math.imul(result^value.charCodeAt(index),0x01000193)>>>0;result^=result>>>16;result=Math.imul(result,0x85ebca6b)>>>0;result^=result>>>13;result=Math.imul(result,0xc2b2ae35)>>>0;result^=result>>>16;return (result>>>0).toString(16).padStart(8,'0');};
     return 'lab1-'+seeds.map(hash).join('');

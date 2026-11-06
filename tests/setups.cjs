@@ -16,7 +16,8 @@ assert.equal(lab.getSettings().jump,0);assert.equal(lab.getSettings().handbrake,
 assert.equal(lab.presets.length,8);
 const normalMaxima={acceleration:5,reverse:5,braking:5,grip:3,steering:2,downforce:5,coasting:5,maxSpeed:1500,boost:5,handbrake:5,jump:20,airJumps:3,gravity:2};
 const extendedMaxima={acceleration:10,reverse:10,braking:10,grip:5,steering:2,downforce:10,coasting:10,maxSpeed:3000,boost:10,handbrake:5,jump:40,airJumps:3,gravity:4};
-for(const field of lab.fields){assert.equal(field.normalMax,normalMaxima[field.key]);assert.equal(field.max,extendedMaxima[field.key]);}
+const sandboxMaxima={acceleration:1000,reverse:1000,braking:1000,grip:50,steering:8,downforce:100,coasting:100,maxSpeed:1000000,boost:1000,handbrake:100,jump:1000,airJumps:99,gravity:20};
+for(const field of lab.fields){if(normalMaxima[field.key]!==undefined){assert.equal(field.normalMax,normalMaxima[field.key]);assert.equal(field.extendedMax,extendedMaxima[field.key]);assert.equal(field.max,sandboxMaxima[field.key]);}else assert(field.min<=field.default&&field.default<=field.normalMax&&field.normalMax<=field.max);}
 assert.equal(lab.presets.find(p=>p.id==='standard').name,'Original');
 for(const [index,id] of ['standard','arcade','drift','rocket','gentle','stunt','lowgravity'].entries()){const preset=lab.presets.find(p=>p.id===id);assert.equal(preset.presetId,index);assert.equal(lab.getSetupIdentity(preset.values).presetId,index);}
 assert.equal(lab.getSetupIdentity({...lab.getDefaults(),acceleration:1.7}).presetId,null);
@@ -46,7 +47,7 @@ lab.saveSettings(lab.getDefaults());
 for(let i=0;i<100;i++){const values=lab.randomizeSettings();for(const field of lab.fields){assert(Number.isFinite(values[field.key]));assert(values[field.key]>=field.min&&values[field.key]<=field.max);}}
 assert.equal(lab.deleteSetup(setup.id),true);assert.equal(lab.getSavedSetups().length,0);
 assert.throws(()=>lab.saveSetup('  ',{}),/name/);
-lab.saveSetup('Out of range',{acceleration:999,jump:-10});assert.equal(lab.getSavedSetups()[0].values.acceleration,lab.fields.find(field=>field.key==='acceleration').max);assert.equal(lab.getSavedSetups()[0].values.jump,0);
+lab.saveSetup('Out of range',{acceleration:1e9,jump:-10});assert.equal(lab.getSavedSetups()[0].values.acceleration,lab.fields.find(field=>field.key==='acceleration').max);assert.equal(lab.getSavedSetups()[0].values.jump,0);
 storage.set('polytrack-lab.setups.v1','broken');assert.equal(lab.getSavedSetups().length,0);
 const input=open();input.lab.saveSettings(input.lab.getDefaults());
 const keydown=code=>input.handlers.keydown({code,repeat:false,target:{tagName:'BODY'}});
@@ -86,3 +87,14 @@ const airborneSetup=open().lab;airborneSetup.saveSettings({...airborneSetup.getD
 const course=open(),baseValues=JSON.stringify(course.lab.getSettings());assert.throws(()=>course.lab.sendCourseSettings({gravity:.25}),/Open a Lab course/);course.lab.getActiveCourse=()=>({id:'fixture'});const courseWorker=new course.context.Worker('simulation_worker.bundle.js');course.lab.sendCourseSettings({gravity:.25,grip:.5,acceleration:2});assert.equal(courseWorker.messages.at(-1).labCourseSettings.gravity,.25);assert.equal(courseWorker.messages.at(-1).labCourseSettings.grip,.5);assert.equal(courseWorker.messages.at(-1).labCourseSettings.acceleration,2);assert.equal(JSON.stringify(course.lab.getSettings()),baseValues,'Course sections never overwrite saved physics');assert.throws(()=>course.lab.sendCourseSettings({downforce:2}),/cannot change aerodynamic/);assert.throws(()=>course.lab.sendCourseSettings({gravity:NaN}),/Invalid live course/);assert.throws(()=>course.lab.sendCourseSettings({airJumps:1.5}),/Invalid live course/);courseWorker.terminate();
 const inactiveCourse=open(),oldCourseWorker=new inactiveCourse.context.Worker('simulation_worker.bundle.js');inactiveCourse.lab.getActiveCourse=()=>({id:'fixture'});assert.throws(()=>inactiveCourse.lab.sendCourseSettings({gravity:.25}),/Restart the game/);oldCourseWorker.terminate();
 console.log('Integer air-jump saves and live-course messages preserve local settings and reject unsafe transitions: PASS');
+const sizing=open(),sizingOriginal=sizing.lab.getDefaults();
+sizing.lab.saveSettings(sizing.lab.presets.find(preset=>preset.id==='arcade').values);
+assert.equal(sizing.lab.getPhysicsKey(),'acceleration:1.5|reverse:1|braking:1.5|grip:1.5|steering:1|downforce:1|coasting:0|maxSpeed:0|boost:0','New default customization must preserve released preset record keys');
+for(const key of ['carScale','bodyWidth','bodyHeight','bodyLength','wheelRadius','wheelWidth','wheelTrack','wheelBase','suspensionLength']){
+  sizing.lab.saveSettings({...sizingOriginal,[key]:1.5});assert(sizing.lab.getPhysicsKey().includes(key+':1.5'));assert.equal(open().lab.getSettings()[key],1.5,'Vehicle dimensions survive reload');
+}
+sizing.lab.saveSettings({...sizingOriginal,boostAuto:.7,airJumpUnlimited:.7,acceleration:1000,maxSpeed:0});
+assert.equal(sizing.lab.getSettings().boostAuto,1);assert.equal(sizing.lab.getSettings().airJumpUnlimited,1);assert.equal(sizing.lab.getSettings().acceleration,1000);assert.equal(sizing.lab.getSettings().maxSpeed,0,'Zero keeps speed uncapped');
+sizing.lab.saveSettings(sizingOriginal);assert.equal(sizing.lab.getPhysicsKey(),'stock');
+const geometryCourse=open();geometryCourse.lab.getActiveCourse=()=>({id:'dimensions'});const geometryWorker=new geometryCourse.context.Worker('simulation_worker.bundle.js');assert.throws(()=>geometryCourse.lab.sendCourseSettings({carScale:2}),/Restart the game to change car dimensions/);assert.throws(()=>geometryCourse.lab.sendCourseSettings({boostAuto:.5}),/Invalid live course/);geometryWorker.terminate();
+console.log('Vehicle configuration persistence, uncapped-speed identity, finite sandbox values and geometry restart guards: PASS');

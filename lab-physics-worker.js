@@ -7,30 +7,35 @@
  * At byte 196573 updateCarModel is about to call stepSimulation and local 8 is
  * CarModel*. CarModel+32 = btRaycastVehicle*, +36 = btRigidBody*.
  * Vehicle+144 = wheel array; sizeof(btWheelInfo)=284. Wheel offsets: steering
- * 232, engineForce252, brake256, frictionSlip216. RigidBody velocity312..320.
+ * 232, engineForce252, brake256, frictionSlip216; chassis connection156..164,
+ * spring rest204, wheel radius212. Chassis hulls scale through the native Init
+ * vertex API before Bullet builds the hull and its inertia. RigidBody velocity312..320.
  * An existing Date.now import carries the hook, using memory[0] temporarily.
  * At stock settings there is no binary or memory modification whatsoever.
  */
 'use strict';
 let labSettings;
 try { labSettings=JSON.parse(decodeURIComponent(self.location.hash.slice(1))); } catch { labSettings={}; }
-const labDefaults={acceleration:1,reverse:1,braking:1,grip:1,steering:1,downforce:1,coasting:0,maxSpeed:0,boost:0,handbrake:0,jump:0,airJumps:0,gravity:1};
+const labDefaults={acceleration:1,reverse:1,braking:1,grip:1,steering:1,downforce:1,coasting:0,maxSpeed:0,boost:0,handbrake:0,jump:0,airJumps:0,gravity:1,carScale:1,bodyWidth:1,bodyHeight:1,bodyLength:1,wheelRadius:1,wheelTrack:1,wheelBase:1,suspensionLength:1,wheelWidth:1,boostAuto:0,jumpCooldown:.75,airJumpCooldown:.15,airJumpUnlimited:0};
 for(const key of Object.keys(labDefaults))if(typeof labSettings?.[key]!=='number'||!Number.isFinite(labSettings[key]))labSettings={...labSettings,[key]:labDefaults[key]};
-labSettings.airJumps=Math.max(0,Math.min(3,Math.round(labSettings.airJumps)));
+labSettings.airJumps=Math.max(0,Math.min(99,Math.round(labSettings.airJumps)));
 const labDynamicCourse=labSettings._dynamicCourse===true,labInitialDownforce=labSettings.downforce;
-const labCourseBounds={acceleration:[.1,10],reverse:[.1,10],braking:[.1,10],grip:[.1,5],steering:[.2,2],downforce:[0,10],coasting:[0,10],maxSpeed:[0,3000],boost:[0,10],handbrake:[0,5],jump:[0,40],airJumps:[0,3],gravity:[0,4]};
+const labGeometryBounds={carScale:[.25,4],bodyWidth:[.5,2],bodyHeight:[.5,2],bodyLength:[.5,2],wheelRadius:[.5,2],wheelTrack:[.5,2],wheelBase:[.5,2],suspensionLength:[.5,2],wheelWidth:[.25,3]};
+const labInitialGeometry=Object.fromEntries(Object.keys(labGeometryBounds).map(key=>[key,labSettings[key]]));
+const labCourseBounds={acceleration:[0,1000],reverse:[0,1000],braking:[0,1000],grip:[0,50],steering:[0,8],downforce:[0,100],coasting:[0,100],maxSpeed:[0,1000000],boost:[0,1000],handbrake:[0,100],jump:[0,1000],airJumps:[0,99],gravity:[0,20],boostAuto:[0,1],airJumpUnlimited:[0,1],jumpCooldown:[0,5],airJumpCooldown:[.05,5],...labGeometryBounds};
 let labBoost=false,labHandbrake=false,labJumpSequence=0;
 const labPlayerCars=new Set();
 const labPlayerState=new Map();
 self.addEventListener('message',event=>{
   if(event.data?.labCourseSettings){
     event.stopImmediatePropagation();const values=event.data.labCourseSettings;
-    const invalid=!labDynamicCourse||!values||typeof values!=='object'||Array.isArray(values)||Object.entries(values).some(([key,value])=>!labCourseBounds[key]||typeof value!=='number'||!Number.isFinite(value)||value<labCourseBounds[key][0]||value>labCourseBounds[key][1]||key==='airJumps'&&!Number.isInteger(value))||values.downforce!==undefined&&values.downforce!==labInitialDownforce;
+    const invalid=!labDynamicCourse||!values||typeof values!=='object'||Array.isArray(values)||Object.entries(values).some(([key,value])=>!labCourseBounds[key]||typeof value!=='number'||!Number.isFinite(value)||value<labCourseBounds[key][0]||value>labCourseBounds[key][1]||['airJumps','boostAuto','airJumpUnlimited'].includes(key)&&!Number.isInteger(value)||labGeometryBounds[key]&&value!==labInitialGeometry[key])||values.downforce!==undefined&&values.downforce!==labInitialDownforce;
     if(invalid){self.postMessage?.({labCourseSettingsRejected:true,error:'Live course settings are invalid or require a physics restart.'});return;}
     labSettings={...labSettings,...values,_dynamicCourse:true};return;
   }
   if(event.data?.labPhysics){labBoost=event.data.boost===true;labHandbrake=event.data.handbrake===true;if(Number.isSafeInteger(event.data.jumpSequence)&&event.data.jumpSequence>=0)labJumpSequence=event.data.jumpSequence;if(event.data.cancelJump===true)for(const state of labPlayerState.values())state.jumpSequence=labJumpSequence;event.stopImmediatePropagation();return;}
   const message=event.data;
+  if(message?.messageType===0)labScaleCollisionInit(message,labSettings);
   if(message?.messageType===3){if(message.carRecording==null){labPlayerCars.add(message.carId);labPlayerState.set(message.carId,{jumpSequence:labJumpSequence,cooldown:0});}else{labPlayerCars.delete(message.carId);labPlayerState.delete(message.carId);}}
   else if(message?.messageType===4){labPlayerCars.delete(message.carId);labPlayerState.delete(message.carId);}
   else if(message?.messageType===7){const state=labPlayerState.get(message.carId);if(state)state.jumpSequence=labJumpSequence;}
@@ -49,7 +54,7 @@ self.importScripts=(...urls)=>{
       let memory;
       return original({...options,instantiateWasm(imports,receive){
         const now=imports.a.h;
-        imports.a.h=()=>{if(memory){const scratch=new DataView(memory.buffer),ptr=scratch.getUint32(0,true),id=scratch.getUint32(16,true),player=labPlayerCars.has(id);if(ptr)labTuneStep(memory,ptr,labSettings,labBoost&&player,scratch.getUint32(12,true)===1,player?{handbrake:labHandbrake,jumpSequence:labJumpSequence,state:labPlayerState.get(id)}:{});}return now();};
+        imports.a.h=()=>{if(memory){const scratch=new DataView(memory.buffer),ptr=scratch.getUint32(0,true),id=scratch.getUint32(16,true),player=labPlayerCars.has(id);if(ptr)labTuneStep(memory,ptr,labSettings,labBoost&&player,scratch.getUint32(12,true)===1,player?{player:true,handbrake:labHandbrake,jumpSequence:labJumpSequence,state:labPlayerState.get(id)}:{});}return now();};
         WebAssembly.instantiate(patched,imports).then(({instance,module})=>{memory=instance.exports.j;receive(instance,module);}).catch(error=>{setTimeout(()=>{throw error;});});
         return {};
       }});
@@ -59,6 +64,10 @@ self.importScripts=(...urls)=>{
 function labPatchPhysics(source,settings){
   if(source.length!==396005||source[196573]!==32||source[196574]!==8||source[196575]!==40)throw new Error('Unsupported physics engine. PolyTrack Lab needs the supplied 0.6.3 binary.');
   const bytes=source.slice(),view=new DataView(bytes.buffer);
+  if(Object.keys(labGeometryBounds).some(key=>key!=='wheelWidth'&&(settings[key]??1)!==1)){
+    const wheelLayout=[32,1,65,213,241,165,245,3,54,2,212,1,32,1,32,13,56,2,208,1,32,1,65,143,133,215,239,3,54,2,204,1];
+    if(wheelLayout.some((byte,index)=>bytes[19757+index]!==byte))throw new Error('Vehicle geometry compatibility check failed.');
+  }
   for(const address of [193940,193970,194000]){
     if(bytes[address]!==67||Math.abs(view.getFloat32(address+1,true)-0.05)>1e-8)throw new Error('Physics downforce compatibility check failed.');
     view.setFloat32(address+1,0.05*settings.downforce,true);
@@ -77,19 +86,50 @@ function labPatchPhysics(source,settings){
   }pos=bodyEnd;}}pos=end;}
   throw new Error('Physics simulation hook not found.');
 }
+function labGeometryFactors(settings){
+  const values={};
+  for(const [key,[min,max]] of Object.entries(labGeometryBounds)){const value=settings[key]??1;if(typeof value!=='number'||!Number.isFinite(value)||value<min||value>max)throw new Error('Invalid vehicle geometry: '+key);values[key]=value;}
+  return values;
+}
+function labScaleCollisionInit(message,settings){
+  const s=labGeometryFactors(settings),x=s.carScale*s.bodyWidth,y=s.carScale*s.bodyHeight,z=s.carScale*s.bodyLength;
+  if(x===1&&y===1&&z===1)return;
+  const source=message.carCollisionShapeVertices;
+  if(!source||!Number.isSafeInteger(source.length)||source.length===0||source.length%3!==0||source.length>1000000||typeof message.carMassOffset!=='number'||!Number.isFinite(message.carMassOffset))throw new Error('Invalid native chassis collision geometry.');
+  const vertices=new Float32Array(source.length);
+  for(let index=0;index<source.length;index++){if(typeof source[index]!=='number'||!Number.isFinite(source[index]))throw new Error('Invalid native chassis collision vertex.');vertices[index]=source[index]*[x,y,z][index%3];}
+  // Native initializeCarCollisionShape builds the convex hull and recalculates inertia.
+  message.carCollisionShapeVertices=vertices;message.carMassOffset*=y;
+}
+function labApplyWheelGeometry(data,vehicle,wheels,settings){
+  if(!['carScale','bodyWidth','bodyHeight','bodyLength','wheelRadius','wheelTrack','wheelBase','suspensionLength'].some(key=>(settings[key]??1)!==1))return;
+  const s=labGeometryFactors(settings);
+  if(data.getUint32(vehicle+136,true)!==4)throw new Error('Unsupported native wheel geometry.');
+  const sx=s.carScale*s.bodyWidth*s.wheelTrack,sy=s.carScale*s.bodyHeight,sz=s.carScale*s.bodyLength*s.wheelBase;
+  for(let index=0;index<4;index++){
+    const wheel=wheels+284*index;
+    // Verified 0.6.3 btWheelInfo: connection CS156, spring rest204, radius212.
+    data.setFloat32(wheel+156,(index<2?.627909:.720832)*(index%2===0?1:-1)*sx,true);
+    data.setFloat32(wheel+160,.27*sy,true);
+    data.setFloat32(wheel+164,(index<2?1.3478:-1.52686)*sz,true);
+    data.setFloat32(wheel+204,.12*s.carScale*s.suspensionLength,true);
+    data.setFloat32(wheel+212,.331*s.carScale*s.wheelRadius,true);
+  }
+}
 function labTuneStep(memory,car,settings,boost,afterStep=false,actions={}){
   const data=new DataView(memory.buffer),length=data.byteLength;
   if(car<1024||car+192>length)throw new Error('Invalid physics car pointer.');
   const vehicle=data.getUint32(car+32,true),body=data.getUint32(car+36,true);
   const wheels=data.getUint32(vehicle+144,true);
   if(!vehicle||!body||!wheels||body+392>length||wheels+1136>length)throw new Error('Invalid physics vehicle layout.');
+  if(!afterStep)labApplyWheelGeometry(data,vehicle,wheels,settings);
   // Bullet stores acceleration and mass-scaled gravitational force separately.
   // Native 0.6.3 gravity is -9.82 m/s²; inverse mass is at body+344.
   if(!afterStep&&typeof settings.gravity==='number'&&(settings.gravity!==1||settings._dynamicCourse===true)){const inverseMass=data.getFloat32(body+344,true);if(!(inverseMass>0))throw new Error('Invalid car mass for gravity tuning.');const acceleration=-9.82*settings.gravity;data.setFloat32(body+384,acceleration,true);data.setFloat32(body+368,acceleration/inverseMass,true);}
   if(!afterStep)for(let index=0;index<4;index++){
     const wheel=wheels+284*index;
     const engine=data.getFloat32(wheel+252,true);
-    if(engine!==0){const multiplier=engine>0?settings.acceleration+(boost?settings.boost:0):settings.reverse;data.setFloat32(wheel+252,engine*multiplier,true);}
+    if(engine!==0){const multiplier=engine>0?settings.acceleration+((boost||settings.boostAuto===1&&(actions.player||actions.state))?settings.boost:0):settings.reverse;data.setFloat32(wheel+252,engine*multiplier,true);}
     if(settings.braking!==1)data.setFloat32(wheel+256,data.getFloat32(wheel+256,true)*settings.braking,true);
     if(settings.grip!==1)data.setFloat32(wheel+216,data.getFloat32(wheel+216,true)*settings.grip,true);
     if(settings.steering!==1&&index<2)data.setFloat32(wheel+232,data.getFloat32(wheel+232,true)*settings.steering,true);
@@ -113,8 +153,8 @@ function labTuneStep(memory,car,settings,boost,afterStep=false,actions={}){
     const waitingForFirstContact=pressed&&!grounded&&frame<=20&&state.cooldown===0&&!data.getUint32(20,true);
     if(waitingForFirstContact)state.initialJumpSequence=actions.jumpSequence;
     else{state.jumpSequence=actions.jumpSequence;state.initialJumpSequence=null;}
-    if(pressed&&state.cooldown===0&&grounded&&!data.getUint32(20,true)){data.setFloat32(body+316,data.getFloat32(body+316,true)+settings.jump,true);state.cooldown=750;state.airCooldown=150;}
-    else if(pressed&&!grounded&&frame>20&&state.airCooldown===0&&(state.airJumpsUsed||0)<Math.max(0,Math.min(3,Math.round(settings.airJumps||0)))){data.setFloat32(body+316,data.getFloat32(body+316,true)+settings.jump,true);state.airJumpsUsed=(state.airJumpsUsed||0)+1;state.airCooldown=150;}
+    if(pressed&&state.cooldown===0&&grounded&&!data.getUint32(20,true)){data.setFloat32(body+316,data.getFloat32(body+316,true)+settings.jump,true);state.cooldown=Math.round((settings.jumpCooldown??.75)*1000);state.airCooldown=Math.round((settings.airJumpCooldown??.15)*1000);}
+    else if(pressed&&!grounded&&frame>20&&state.airCooldown===0&&(settings.airJumpUnlimited===1||(state.airJumpsUsed||0)<Math.max(0,Math.min(99,Math.round(settings.airJumps||0))))){data.setFloat32(body+316,data.getFloat32(body+316,true)+settings.jump,true);state.airJumpsUsed=(state.airJumpsUsed||0)+1;state.airCooldown=Math.round((settings.airJumpCooldown??.15)*1000);}
     }
   }
   if(!afterStep&&settings.coasting>0&&!data.getUint32(4,true)&&!data.getUint32(8,true)&&[0,1,2,3].some(index=>data.getUint8(wheels+284*index+84))){const factor=Math.exp(-settings.coasting*0.001);for(const offset of [312,316,320])data.setFloat32(body+offset,data.getFloat32(body+offset,true)*factor,true);}

@@ -2,30 +2,44 @@
 (() => {
   'use strict';
   const fields = [
-    {key:'acceleration',label:'Acceleration',min:0.1,max:5,step:0.1,default:1,unit:'×',description:'Scales the engine force while accelerating.',left:'Gentle',right:'Rapid'},
-    {key:'reverse',label:'Reverse power',min:0.1,max:5,step:0.1,default:1,unit:'×',description:'Scales the engine force used to reverse.',left:'Gentle',right:'Strong'},
-    {key:'braking',label:'Braking',min:0.1,max:5,step:0.1,default:1,unit:'×',description:'Scales all four wheel brakes.',left:'Soft',right:'Hard'},
-    {key:'grip',label:'Tire grip',min:0.1,max:3,step:0.1,default:1,unit:'×',description:'Scales tire traction. Low grip makes sliding easier.',left:'Slippery',right:'Sticky'},
-    {key:'steering',label:'Steering strength',min:0.2,max:2,step:0.1,default:1,unit:'×',description:'Scales the actual front wheel steering angle.',left:'Wide turns',right:'Sharp turns'},
+    {key:'acceleration',label:'Acceleration',min:0,max:5,step:0.1,default:1,unit:'×',description:'Scales the engine force while accelerating.',left:'Gentle',right:'Rapid'},
+    {key:'reverse',label:'Reverse power',min:0,max:5,step:0.1,default:1,unit:'×',description:'Scales the engine force used to reverse.',left:'Gentle',right:'Strong'},
+    {key:'braking',label:'Braking',min:0,max:5,step:0.1,default:1,unit:'×',description:'Scales all four wheel brakes.',left:'Soft',right:'Hard'},
+    {key:'grip',label:'Tire grip',min:0,max:3,step:0.1,default:1,unit:'×',description:'Scales tire traction. Low grip makes sliding easier.',left:'Slippery',right:'Sticky'},
+    {key:'steering',label:'Steering strength',min:0,max:2,step:0.1,default:1,unit:'×',description:'Scales the actual front wheel steering angle.',left:'Wide turns',right:'Sharp turns'},
     {key:'downforce',label:'Aerodynamic downforce',min:0,max:5,step:0.1,default:1,unit:'×',description:'Scales the speed-dependent force that presses the car toward the road.',left:'None',right:'Strong'},
     {key:'coasting',label:'Coasting slowdown',min:0,max:5,step:0.1,default:0,unit:' /s',description:'Adds slowing while grounded with acceleration and brake released. Zero keeps the original behavior.',left:'Original',right:'Stops quickly'},
-    {key:'maxSpeed',label:'Speed limit',min:0,max:1500,step:10,default:0,unit:' km/h',description:'Caps the car’s total velocity. Zero keeps the original uncapped behavior.',left:'0 = original',right:'1500 km/h'},
+    {key:'maxSpeed',label:'Speed limit',min:0,max:1500,step:10,default:0,unit:' km/h',description:'Caps the car’s total velocity. Zero keeps the original uncapped behavior.',left:'0 = uncapped',right:'1500 km/h'},
     {key:'boost',label:'Boost power',min:0,max:5,step:0.1,default:0,unit:'×',description:'Hold B while accelerating to add engine power. Zero disables boost. Boost runs save times; ghosts and replays are unavailable.',left:'Off',right:'Strong boost'},
     {key:'handbrake',label:'Handbrake strength',min:0,max:5,step:0.1,default:0,unit:'×',description:'Hold N to brake the rear wheels and loosen their grip for sliding. Zero disables this extra control. Enabled runs save times without ghosts or replays.',left:'Off',right:'Strong rear brake'},
     {key:'jump',label:'Jump strength',min:0,max:20,step:0.5,default:0,unit:' m/s',description:'Press J to jump from the road. Air jumps can add extra presses in the air. Zero disables jumping. Enabled runs save times without ghosts or replays.',left:'Off',right:'High jump'},
     {key:'airJumps',label:'Air jumps',min:0,max:3,step:1,default:0,unit:' extra',description:'Extra jumps before landing: 1 gives a double jump, 2 a triple jump. Requires Jump strength above zero. Press the jump key again in the air; landing recharges the extra jumps.',left:'0 = road only',right:'3 extra jumps'},
+    {"key":"boostAuto","label":"Automatic boost","min":0,"max":1,"step":1,"integer":true,"options":["Hold boost key","Always while accelerating"],"default":0,"unit":"","description":"Automatically applies Boost power while accelerating. Set Boost power above zero first. Original is hold-to-boost.","group":"extras"},
+    {"key":"jumpCooldown","label":"Road jump recharge","min":0,"max":5,"step":0.05,"default":0.75,"unit":" s","description":"Time between road jumps. Zero removes the added cooldown; you still press the jump key for each jump.","group":"extras"},
+    {"key":"airJumpCooldown","label":"Air jump recharge","min":0.05,"max":5,"step":0.05,"default":0.15,"unit":" s","description":"Minimum time between separate airborne jump presses.","group":"extras"},
+    {"key":"airJumpUnlimited","label":"Unlimited air jumps","min":0,"max":1,"step":1,"integer":true,"options":["Limited by Air jumps","Unlimited until landing"],"default":0,"unit":"","description":"With Jump strength enabled, lets you jump again in the air without exhausting a jump count. Press the jump key for each jump.","group":"extras"},
+    {"key":"carScale","label":"Whole car size","min":0.25,"max":4,"step":0.05,"default":1,"unit":"×","description":"Scales the real chassis collision hull and wheel layout together. 0.5× is half-size; 2× is twice as large.","group":"vehicle"},
+    {"key":"bodyWidth","label":"Body width","min":0.5,"max":2,"step":0.05,"default":1,"unit":"×","description":"Changes the chassis width and its collision hull. Wheel track is a separate control.","group":"vehicle"},
+    {"key":"bodyLength","label":"Body length","min":0.5,"max":2,"step":0.05,"default":1,"unit":"×","description":"Changes the chassis length and its collision hull. Wheelbase is a separate control.","group":"vehicle"},
+    {"key":"bodyHeight","label":"Body height","min":0.5,"max":2,"step":0.05,"default":1,"unit":"×","description":"Changes the chassis height and its collision hull.","group":"vehicle"},
+    {"key":"wheelRadius","label":"Wheel radius","min":0.5,"max":2,"step":0.05,"default":1,"unit":"×","description":"Changes visible wheel radius and the real wheel ground-contact radius.","group":"vehicle"},
+    {"key":"wheelWidth","label":"Wheel width (appearance)","min":0.25,"max":3,"step":0.05,"default":1,"unit":"×","description":"Makes tires look wider or narrower. The original engine uses raycast wheels, so tire width does not create a wider solid collider or extra grip.","group":"vehicle"},
+    {"key":"wheelTrack","label":"Wheel spacing","min":0.5,"max":2,"step":0.05,"default":1,"unit":"×","description":"Moves the real wheel contact points farther apart or closer together across the car.","group":"vehicle"},
+    {"key":"wheelBase","label":"Wheelbase","min":0.5,"max":2,"step":0.05,"default":1,"unit":"×","description":"Moves the front and rear wheel contact points farther apart or closer together.","group":"vehicle"},
+    {"key":"suspensionLength","label":"Suspension length","min":0.5,"max":2,"step":0.05,"default":1,"unit":"×","description":"Changes the real wheel suspension rest length and ride height.","group":"vehicle"},
     {key:'gravity',label:'Gravity',min:0,max:2,step:0.05,default:1,unit:'×',description:'Scales the real downward gravitational force. Low values make airtime longer; zero removes gravity. Downforce remains a separate setting.',left:'Weightless',right:'Heavy'}
   ];
   // The workshop starts with the original practical ranges. Extended mode can
   // expose these additional engine-tested limits without changing presets.
   const extendedMaxima={acceleration:10,reverse:10,braking:10,grip:5,downforce:10,coasting:10,maxSpeed:3000,boost:10,jump:40,gravity:4};
-  for(const field of fields){field.normalMax=field.max;field.max=extendedMaxima[field.key]??field.max;}
+  const sandboxMaxima={acceleration:1000,reverse:1000,braking:1000,grip:50,steering:8,downforce:100,coasting:100,maxSpeed:1000000,boost:1000,handbrake:100,jump:1000,airJumps:99,gravity:20};
+  for(const field of fields){field.normalMax=field.max;field.extendedMax=extendedMaxima[field.key]??field.max;field.max=sandboxMaxima[field.key]??field.extendedMax;}
   const storageKey='polytrack-lab.physics.v1';
-  const normalize = input => Object.fromEntries(fields.map(f => {const value=typeof input?.[f.key] === 'number' && Number.isFinite(input[f.key]) ? Math.min(f.max, Math.max(f.min, input[f.key])) : f.default;return [f.key,f.key==='airJumps'?Math.round(value):value];}));
+  const normalize = input => Object.fromEntries(fields.map(f => {const value=typeof input?.[f.key] === 'number' && Number.isFinite(input[f.key]) ? Math.min(f.max, Math.max(f.min, input[f.key])) : f.default;return [f.key,(f.key==='airJumps'||f.integer)?Math.round(value):value];}));
   let settings;
   try { settings=normalize(JSON.parse(localStorage.getItem(storageKey)||'null')); } catch { settings=normalize(null); }
   // Preserve keys for existing v1 profiles when the two new mechanics are off.
-  const fingerprint = s => fields.every(f=>s[f.key]===f.default) ? 'stock' : fields.filter(f=>!['handbrake','jump','gravity','airJumps'].includes(f.key)||s[f.key]!==f.default).map(f=>`${f.key}:${s[f.key]}`).join('|');
+  const fingerprint = s => fields.every(f=>s[f.key]===f.default) ? 'stock' : fields.filter(f=>!['handbrake','jump','gravity','airJumps',"boostAuto","jumpCooldown","airJumpCooldown","airJumpUnlimited","carScale","bodyWidth","bodyLength","bodyHeight","wheelRadius","wheelWidth","wheelTrack","wheelBase","suspensionLength"].includes(f.key)||s[f.key]!==f.default).map(f=>`${f.key}:${s[f.key]}`).join('|');
   const replayEnabled = () => settings.boost===0&&settings.handbrake===0&&settings.jump===0;
   const preset = (id,name,description,values) => ({id,name,description,values:normalize(values)});
   const presets=[
@@ -133,18 +147,18 @@
       const target=new URL(url,location.href);
       const physics=target.pathname.endsWith('/simulation_worker.bundle.js');
       const dynamicCourse=physics&&!!window.PolyTrackLab?.getActiveCourse?.();
-      if(physics){target.pathname=target.pathname.replace(/simulation_worker\.bundle\.js$/,'lab-physics-worker.js');target.searchParams.set('lab','1.4.0');target.hash=encodeURIComponent(JSON.stringify({...settings,...(dynamicCourse?{_dynamicCourse:true}:{})}));}
+      if(physics){target.pathname=target.pathname.replace(/simulation_worker\.bundle\.js$/,'lab-physics-worker.js');target.searchParams.set('lab','1.5.0');target.hash=encodeURIComponent(JSON.stringify({...settings,...(dynamicCourse?{_dynamicCourse:true}:{})}));}
       super(physics?target.href:url,options);
-      if(physics){workers.add(this);if(dynamicCourse)courseWorkers.set(this,settings.downforce);this.postMessage({labPhysics:true,boost:boostHeld,handbrake:handbrakeHeld,jumpSequence});}
+      if(physics){workers.add(this);if(dynamicCourse)courseWorkers.set(this,{...settings});this.postMessage({labPhysics:true,boost:boostHeld,handbrake:handbrakeHeld,jumpSequence});}
     }
     terminate(){workers.delete(this);courseWorkers.delete(this);super.terminate();}
   };
   const sendCourseSettings=input=>{
     if(!window.PolyTrackLab?.getActiveCourse?.())throw Error('Open a Lab course before changing its live physics.');
     if(!input||typeof input!=='object'||Array.isArray(input))throw Error('Invalid live course settings.');
-    for(const [key,value] of Object.entries(input)){const field=fields.find(field=>field.key===key);if(!field||typeof value!=='number'||!Number.isFinite(value)||value<field.min||value>field.max||key==='airJumps'&&!Number.isInteger(value))throw Error('Invalid live course setting: '+key);}
+    for(const [key,value] of Object.entries(input)){const field=fields.find(field=>field.key===key);if(!field||typeof value!=='number'||!Number.isFinite(value)||value<field.min||value>field.max||(key==='airJumps'||field.integer)&&!Number.isInteger(value))throw Error('Invalid live course setting: '+key);}
     const next=normalize({...settings,...input});
-    for(const worker of workers){if(!courseWorkers.has(worker))throw Error('Restart the game to activate live course physics.');if(next.downforce!==courseWorkers.get(worker))throw Error('Live course sections cannot change aerodynamic downforce.');}
+    for(const worker of workers){if(!courseWorkers.has(worker))throw Error('Restart the game to activate live course physics.');const initial=courseWorkers.get(worker);if(next.downforce!==initial.downforce)throw Error('Live course sections cannot change aerodynamic downforce.');if(fields.some(field=>field.group==='vehicle'&&next[field.key]!==initial[field.key]))throw Error('Restart the game to change car dimensions.');}
     for(const worker of workers)worker.postMessage({labCourseSettings:next});
     return {...next};
   };

@@ -28,13 +28,15 @@
   const make = (tag, className, text) => { const node = document.createElement(tag); if (className) node.className = className; if (text !== undefined) node.textContent = text; return node; };
   const states = new WeakMap();
   const carPreviews=new Map();
-  async function carPreview(style){
+  async function carPreview(input){
+    const style=typeof input==='string'?input:input?.style,values=input?.values||lab.getDefaults();
     if(typeof style!=='string'||!style||typeof lab.renderCarThumbnail!=='function')return null;
-    if(!carPreviews.has(style)){
-      const promise=Promise.resolve().then(()=>lab.renderCarThumbnail(style)).catch(error=>{carPreviews.delete(style);throw error;});
-      carPreviews.set(style,promise);if(carPreviews.size>160)carPreviews.delete(carPreviews.keys().next().value);
+    const key=style+'|'+JSON.stringify(lab.fields.filter(field=>field.group==='vehicle').map(field=>values[field.key]??field.default));
+    if(!carPreviews.has(key)){
+      const promise=Promise.resolve().then(()=>lab.renderCarThumbnail(style,values)).catch(error=>{carPreviews.delete(key);throw error;});
+      carPreviews.set(key,promise);if(carPreviews.size>160)carPreviews.delete(carPreviews.keys().next().value);
     }
-    return carPreviews.get(style);
+    return carPreviews.get(key);
   }
   let queued = false, nextId = 0, pendingTrack = null;
   function mount(trackId) {
@@ -106,7 +108,7 @@
       rows.forEach((record,index)=>{const li=make('li'),row=make('button','lab-public-row lab-experiment-row');row.type='button';
         const label=make('span','lab-experiment-label');label.append(make('strong','',`${record.nickname || 'Anonymous'} (you)`),make('span','',`${record.setupLabel||record.presetName}${record.saveNumber?' · Save #'+record.saveNumber:''}`));
         if(recentRuns)label.append(make('small','lab-run-age',new Date(record.date).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit',second:'2-digit'})));
-        row.append(make('span','lab-public-rank',recentRuns?'↻':'#'+(index+1)));addPreview(row,()=>lab.getLocalCarStyle?.(record));row.append(label,make('span','lab-public-time',time(record.timeMs)));
+        row.append(make('span','lab-public-rank',recentRuns?'↻':'#'+(index+1)));addPreview(row,()=>({style:lab.getLocalCarStyle?.(record),values:record.physicsValues}));row.append(label,make('span','lab-public-time',time(record.timeMs)));
         row.title=lab.describeSettings?.(record.physicsValues)||'Open settings for this run';
         row.addEventListener('click',()=>lab.showRunDetails(record));row.addEventListener('contextmenu',e=>{e.preventDefault();lab.showRunDetails(record);});li.append(row);list.append(li);
       });experiments.append(list);

@@ -1,0 +1,14 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
+let settings={};const lab={getSettings:()=>settings,getDefaults:()=>({})},context={window:{PolyTrackLab:lab}};vm.createContext(context);vm.runInContext(fs.readFileSync(path.join(__dirname,'../lab-vehicle.js'),'utf8'),context);const plain=value=>JSON.parse(JSON.stringify(value));
+let scaled=0;const matrix={translation:[10,20,30],scale(value){scaled++;this.basis=plain(value);return this;}};
+lab.vehicleBodyMatrix({},matrix);assert.equal(scaled,0,'Original body matrix is untouched');assert.equal(lab.vehicleMassOffset({},.6),.6);
+const stock={x:.627909,y:.27,z:1.3478};assert.deepEqual(plain(lab.vehicleWheelPosition({}, {...stock})),stock);
+settings={carScale:2,bodyWidth:1.5,bodyHeight:.5,bodyLength:1.25,wheelRadius:1.5,wheelWidth:2,wheelTrack:1.2,wheelBase:.8,suspensionLength:1.5};
+lab.vehicleBodyMatrix({},matrix);assert.deepEqual(matrix.basis,{x:3,y:1,z:2.5});assert.deepEqual(matrix.translation,[10,20,30],'Scaling local geometry never scales world translation');assert.equal(lab.vehicleMassOffset({},.6),.6);
+const position=lab.vehicleWheelPosition({}, {...stock});assert(Math.abs(position.x-stock.x*3*1.2)<1e-12);assert.equal(position.y,stock.y);assert(Math.abs(position.z-stock.z*2.5*.8)<1e-12);assert.deepEqual(stock,{x:.627909,y:.27,z:1.3478},'Native constants stay unchanged');
+assert.equal(lab.vehicleSuspension({labVehicleStaticPose:false},.2),.2,'Solver suspension output is already in world units');assert.equal(lab.vehicleSuspension({labVehicleStaticPose:true},.2),.6000000000000001);
+const wheel={scale:{x:-1,y:2,z:3,set(x,y,z){this.x=x;this.y=y;this.z=z;}}};lab.vehicleWheelMesh({},wheel);assert.deepEqual([wheel.scale.x,wheel.scale.y,wheel.scale.z],[-4,6,9]);lab.vehicleWheelMesh({},wheel);assert.deepEqual([wheel.scale.x,wheel.scale.y,wheel.scale.z],[-4,6,9],'Repeated updates do not compound size');
+settings={};lab.vehicleWheelMesh({},wheel);assert.deepEqual([wheel.scale.x,wheel.scale.y,wheel.scale.z],[-1,2,3],'Original restores native mesh scale and mirroring');
+const preview={labVehiclePreviewSettings:{carScale:.5,wheelRadius:2}};assert.equal(lab.vehicleDimensions(preview).carScale,.5);assert.equal(lab.vehicleDimensions({}).carScale,1,'A thumbnail draft never leaks to the driving car');assert.equal(lab.vehiclePreviewOptions({carScale:4}).zoom,.125);assert.equal(lab.vehicleCameraScale(),1);
+settings={carScale:4,bodyLength:2};assert.equal(lab.vehicleCameraScale(),8);const cockpit=lab.vehicleCockpitOffset({x:0,y:1.1,z:.4});assert.deepEqual(plain(cockpit),{x:0,y:4.4,z:3.2});
+console.log('PASS: native axes, scaled local hull/tire offsets, unscaled world pose, non-compounding mirrored wheels, isolated previews and size-aware cameras.');
