@@ -1,0 +1,613 @@
+{
+  "schemaVersion": 1,
+  "source": "Kodub public leaderboard",
+  "physics": "stock",
+  "version": "0.6.3",
+  "capturedAt": "2026-11-06T03:14:38.506Z",
+  "trackId": "191737cc4d1b74949e992d99371e5c7f5fc446a716af571c6e5449b23e9f4558",
+  "trackName": "Snow Park",
+  "onlyVerified": true,
+  "total": 90442,
+  "entries": [
+    {
+      "rank": 1,
+      "nickname": "🇭🇰🦈 Wak3son🦈🇭🇰",
+      "timeMs": 22105,
+      "countryCode": null
+    },
+    {
+      "rank": 2,
+      "nickname": "SpeedySebas",
+      "timeMs": 22109,
+      "countryCode": null
+    },
+    {
+      "rank": 3,
+      "nickname": "cwcinc",
+      "timeMs": 22203,
+      "countryCode": "lc"
+    },
+    {
+      "rank": 4,
+      "nickname": "ıllıllı 𝐊𝐢𝐤𝐢 ıllıllı",
+      "timeMs": 22203,
+      "countryCode": "ro"
+    },
+    {
+      "rank": 5,
+      "nickname": "LanceB_YT",
+      "timeMs": 22226,
+      "countryCode": "us"
+    },
+    {
+      "rank": 6,
+      "nickname": "xtuov",
+      "timeMs": 22228,
+      "countryCode": "fi"
+    },
+    {
+      "rank": 7,
+      "nickname": "NeoRacer",
+      "timeMs": 22231,
+      "countryCode": "fr"
+    },
+    {
+      "rank": 8,
+      "nickname": "puRple",
+      "timeMs": 22233,
+      "countryCode": null
+    },
+    {
+      "rank": 9,
+      "nickname": "Reegan_Cuber",
+      "timeMs": 22247,
+      "countryCode": "us"
+    },
+    {
+      "rank": 10,
+      "nickname": "Vertexpoint",
+      "timeMs": 22248,
+      "countryCode": null
+    },
+    {
+      "rank": 11,
+      "nickname": "tiro 😼",
+      "timeMs": 22267,
+      "countryCode": "us"
+    },
+    {
+      "rank": 12,
+      "nickname": "Monstrosity",
+      "timeMs": 22274,
+      "countryCode": null
+    },
+    {
+      "rank": 13,
+      "nickname": "Avalanche",
+      "timeMs": 22277,
+      "countryCode": null
+    },
+    {
+      "rank": 14,
+      "nickname": "Chanpanzee",
+      "timeMs": 22285,
+      "countryCode": null
+    },
+    {
+      "rank": 15,
+      "nickname": "Window Cleaner",
+      "timeMs": 22287,
+      "countryCode": "us"
+    },
+    {
+      "rank": 16,
+      "nickname": "cottrill",
+      "timeMs": 22288,
+      "countryCode": "gb"
+    },
+    {
+      "rank": 17,
+      "nickname": "Herny",
+      "timeMs": 22290,
+      "countryCode": "au"
+    },
+    {
+      "rank": 18,
+      "nickname": "puRple_chromebook",
+      "timeMs": 22296,
+      "countryCode": "ca"
+    },
+    {
+      "rank": 19,
+      "nickname": "cheesebob (81)",
+      "timeMs": 22299,
+      "countryCode": "au"
+    },
+    {
+      "rank": 20,
+      "nickname": "M oo 21 5ki 3x!!",
+      "timeMs": 22313,
+      "countryCode": "au"
+    },
+    {
+      "rank": 21,
+      "nickname": "hwadz z",
+      "timeMs": 22316,
+      "countryCode": null
+    },
+    {
+      "rank": 22,
+      "nickname": "youngfella",
+      "timeMs": 22316,
+      "countryCode": null
+    },
+    {
+      "rank": 23,
+      "nickname": "DM",
+      "timeMs": 22323,
+      "countryCode": "it"
+    },
+    {
+      "rank": 24,
+      "nickname": "8L4Z3 :D",
+      "timeMs": 22328,
+      "countryCode": "us"
+    },
+    {
+      "rank": 25,
+      "nickname": "Spiral_X1",
+      "timeMs": 22332,
+      "countryCode": "gb"
+    },
+    {
+      "rank": 26,
+      "nickname": "a",
+      "timeMs": 22332,
+      "countryCode": null
+    },
+    {
+      "rank": 27,
+      "nickname": "Anonymous",
+      "timeMs": 22334,
+      "countryCode": null
+    },
+    {
+      "rank": 28,
+      "nickname": "ヨリット",
+      "timeMs": 22337,
+      "countryCode": "jp"
+    },
+    {
+      "rank": 29,
+      "nickname": "CnoMoneyPT",
+      "timeMs": 22339,
+      "countryCode": "gb"
+    },
+    {
+      "rank": 30,
+      "nickname": "FellowPurper ",
+      "timeMs": 22341,
+      "countryCode": "la"
+    },
+    {
+      "rank": 31,
+      "nickname": "K-o ten",
+      "timeMs": 22347,
+      "countryCode": "us"
+    },
+    {
+      "rank": 32,
+      "nickname": "Window Cleaner //86//",
+      "timeMs": 22348,
+      "countryCode": "us"
+    },
+    {
+      "rank": 33,
+      "nickname": "☢️ Nuclear☢️ FellowPurper",
+      "timeMs": 22352,
+      "countryCode": "la"
+    },
+    {
+      "rank": 34,
+      "nickname": "OL",
+      "timeMs": 22352,
+      "countryCode": "it"
+    },
+    {
+      "rank": 35,
+      "nickname": "qwertyuiop",
+      "timeMs": 22360,
+      "countryCode": "sg"
+    },
+    {
+      "rank": 36,
+      "nickname": "↑ DUMB CHEATER ↑",
+      "timeMs": 22361,
+      "countryCode": null
+    },
+    {
+      "rank": 37,
+      "nickname": "RX",
+      "timeMs": 22361,
+      "countryCode": null
+    },
+    {
+      "rank": 38,
+      "nickname": "Orangy",
+      "timeMs": 22368,
+      "countryCode": "ca"
+    },
+    {
+      "rank": 39,
+      "nickname": "imracer",
+      "timeMs": 22373,
+      "countryCode": "pl"
+    },
+    {
+      "rank": 40,
+      "nickname": "Coolguy123",
+      "timeMs": 22373,
+      "countryCode": "us"
+    },
+    {
+      "rank": 41,
+      "nickname": "SlowGuy185",
+      "timeMs": 22379,
+      "countryCode": "id"
+    },
+    {
+      "rank": 42,
+      "nickname": "𝒲𝒾𝓃𝒹𝑒𝓍 𝒱𝟤",
+      "timeMs": 22380,
+      "countryCode": "us"
+    },
+    {
+      "rank": 43,
+      "nickname": "Simspeed",
+      "timeMs": 22380,
+      "countryCode": "us"
+    },
+    {
+      "rank": 44,
+      "nickname": "henry cheated run :(",
+      "timeMs": 22385,
+      "countryCode": null
+    },
+    {
+      "rank": 45,
+      "nickname": "cissytan 1",
+      "timeMs": 22386,
+      "countryCode": "au"
+    },
+    {
+      "rank": 46,
+      "nickname": "lapwo",
+      "timeMs": 22389,
+      "countryCode": null
+    },
+    {
+      "rank": 47,
+      "nickname": "DarkestPolyuss ",
+      "timeMs": 22390,
+      "countryCode": "gb"
+    },
+    {
+      "rank": 48,
+      "nickname": "Histioth [human]",
+      "timeMs": 22393,
+      "countryCode": "nl"
+    },
+    {
+      "rank": 49,
+      "nickname": "hwadz",
+      "timeMs": 22398,
+      "countryCode": null
+    },
+    {
+      "rank": 50,
+      "nickname": ".",
+      "timeMs": 22401,
+      "countryCode": null
+    },
+    {
+      "rank": 51,
+      "nickname": "Tvirty",
+      "timeMs": 22402,
+      "countryCode": null
+    },
+    {
+      "rank": 52,
+      "nickname": "The Voidking 👑",
+      "timeMs": 22403,
+      "countryCode": "do"
+    },
+    {
+      "rank": 53,
+      "nickname": "Anonymous",
+      "timeMs": 22404,
+      "countryCode": null
+    },
+    {
+      "rank": 54,
+      "nickname": "noi####",
+      "timeMs": 22405,
+      "countryCode": null
+    },
+    {
+      "rank": 55,
+      "nickname": "LeoLund10",
+      "timeMs": 22406,
+      "countryCode": null
+    },
+    {
+      "rank": 56,
+      "nickname": "Noiser",
+      "timeMs": 22408,
+      "countryCode": null
+    },
+    {
+      "rank": 57,
+      "nickname": "henry  not cheated run",
+      "timeMs": 22412,
+      "countryCode": "sm"
+    },
+    {
+      "rank": 58,
+      "nickname": "diddy's disciple",
+      "timeMs": 22414,
+      "countryCode": "ne"
+    },
+    {
+      "rank": 59,
+      "nickname": "Tonistohno",
+      "timeMs": 22414,
+      "countryCode": "cn"
+    },
+    {
+      "rank": 60,
+      "nickname": "[fih] supremeyoshi",
+      "timeMs": 22417,
+      "countryCode": "sg"
+    },
+    {
+      "rank": 61,
+      "nickname": "vvsvsvsvvsvvsc@gmail####",
+      "timeMs": 22418,
+      "countryCode": null
+    },
+    {
+      "rank": 62,
+      "nickname": "amir0984",
+      "timeMs": 22422,
+      "countryCode": "dk"
+    },
+    {
+      "rank": 63,
+      "nickname": "Why am I spending my time on this?",
+      "timeMs": 22430,
+      "countryCode": null
+    },
+    {
+      "rank": 64,
+      "nickname": "radioactive alien",
+      "timeMs": 22432,
+      "countryCode": null
+    },
+    {
+      "rank": 65,
+      "nickname": "Ramon",
+      "timeMs": 22440,
+      "countryCode": "ch"
+    },
+    {
+      "rank": 66,
+      "nickname": "sensei",
+      "timeMs": 22441,
+      "countryCode": "ch"
+    },
+    {
+      "rank": 67,
+      "nickname": "𝔻𝟜ℂ🗇",
+      "timeMs": 22441,
+      "countryCode": "cn"
+    },
+    {
+      "rank": 68,
+      "nickname": " 𝕰𝖛𝖊𝖗𝖌𝖑𝖊𝖊𝖓",
+      "timeMs": 22442,
+      "countryCode": null
+    },
+    {
+      "rank": 69,
+      "nickname": "philr's dih",
+      "timeMs": 22443,
+      "countryCode": "es"
+    },
+    {
+      "rank": 70,
+      "nickname": "jeffunicorn",
+      "timeMs": 22444,
+      "countryCode": "ca"
+    },
+    {
+      "rank": 71,
+      "nickname": "DarkestPolyuss 💀",
+      "timeMs": 22448,
+      "countryCode": "gb"
+    },
+    {
+      "rank": 72,
+      "nickname": "pi77_um_pvp",
+      "timeMs": 22450,
+      "countryCode": "th"
+    },
+    {
+      "rank": 73,
+      "nickname": "𝙂𝙧𝙚𝙖𝙩 𝙂𝙖𝙡𝙡𝙮",
+      "timeMs": 22451,
+      "countryCode": "ie"
+    },
+    {
+      "rank": 74,
+      "nickname": "Sid Hornick",
+      "timeMs": 22451,
+      "countryCode": "us"
+    },
+    {
+      "rank": 75,
+      "nickname": "Luke",
+      "timeMs": 22453,
+      "countryCode": null
+    },
+    {
+      "rank": 76,
+      "nickname": "nah Rongo, I'd win",
+      "timeMs": 22454,
+      "countryCode": null
+    },
+    {
+      "rank": 77,
+      "nickname": "Window Cleaner",
+      "timeMs": 22454,
+      "countryCode": "us"
+    },
+    {
+      "rank": 78,
+      "nickname": "[🛖] infelix",
+      "timeMs": 22457,
+      "countryCode": null
+    },
+    {
+      "rank": 79,
+      "nickname": "ThatRandomPineapple",
+      "timeMs": 22458,
+      "countryCode": "no"
+    },
+    {
+      "rank": 80,
+      "nickname": "Eeep!",
+      "timeMs": 22458,
+      "countryCode": null
+    },
+    {
+      "rank": 81,
+      "nickname": "BigBuster",
+      "timeMs": 22463,
+      "countryCode": "de"
+    },
+    {
+      "rank": 82,
+      "nickname": "Arnav Skanda Siripurapu",
+      "timeMs": 22464,
+      "countryCode": null
+    },
+    {
+      "rank": 83,
+      "nickname": "Tim",
+      "timeMs": 22466,
+      "countryCode": "nl"
+    },
+    {
+      "rank": 84,
+      "nickname": "=1",
+      "timeMs": 22466,
+      "countryCode": null
+    },
+    {
+      "rank": 85,
+      "nickname": "lizerdliker",
+      "timeMs": 22466,
+      "countryCode": "us"
+    },
+    {
+      "rank": 86,
+      "nickname": "young nig",
+      "timeMs": 22469,
+      "countryCode": null
+    },
+    {
+      "rank": 87,
+      "nickname": "zgeg",
+      "timeMs": 22470,
+      "countryCode": null
+    },
+    {
+      "rank": 88,
+      "nickname": "Mark-Dieter Kling",
+      "timeMs": 22471,
+      "countryCode": "de"
+    },
+    {
+      "rank": 89,
+      "nickname": "S|owest ⌖VĀÑØ⌖ PT",
+      "timeMs": 22473,
+      "countryCode": "au"
+    },
+    {
+      "rank": 90,
+      "nickname": "₱ɄⱤ₱ⱠɆĐᵖᶜ⁻ᵈᵘᵉᵈ",
+      "timeMs": 22473,
+      "countryCode": "ph"
+    },
+    {
+      "rank": 91,
+      "nickname": "Maksimam Okupanciy",
+      "timeMs": 22474,
+      "countryCode": "er"
+    },
+    {
+      "rank": 92,
+      "nickname": "PASA8127",
+      "timeMs": 22475,
+      "countryCode": null
+    },
+    {
+      "rank": 93,
+      "nickname": "Caillou",
+      "timeMs": 22476,
+      "countryCode": "fr"
+    },
+    {
+      "rank": 94,
+      "nickname": "Codependium",
+      "timeMs": 22476,
+      "countryCode": "au"
+    },
+    {
+      "rank": 95,
+      "nickname": "miso [TAS]",
+      "timeMs": 22476,
+      "countryCode": null
+    },
+    {
+      "rank": 96,
+      "nickname": "YingYang",
+      "timeMs": 22476,
+      "countryCode": "jp"
+    },
+    {
+      "rank": 97,
+      "nickname": "d̶͈̠̹̖͚̣̏ͅ〄௹௹⍒ 🍀 ",
+      "timeMs": 22477,
+      "countryCode": null
+    },
+    {
+      "rank": 98,
+      "nickname": "ssa",
+      "timeMs": 22479,
+      "countryCode": "us"
+    },
+    {
+      "rank": 99,
+      "nickname": "Sid H.",
+      "timeMs": 22481,
+      "countryCode": "us"
+    },
+    {
+      "rank": 100,
+      "nickname": "The_Rhodon Bib",
+      "timeMs": 22482,
+      "countryCode": "pt"
+    }
+  ]
+}

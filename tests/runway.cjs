@@ -1,0 +1,11 @@
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),crypto=require('node:crypto');
+const root=path.resolve(__dirname,'..'),codec=require(root+'/scripts/lab-track-codec.cjs');
+const metadata=JSON.parse(fs.readFileSync(root+'/lab-tracks/runway.json','utf8')),code=fs.readFileSync(root+'/'+metadata.trackPath,'utf8').trim(),parsed=codec.parseExport(code),expected=codec.runwayCanonical();
+assert.equal(parsed.name,'Lab Runway XL');assert.equal(parsed.author,'PolyTrack Lab');assert.equal(parsed.lastModified,null);assert.deepEqual(parsed.canonical,expected);assert.equal(crypto.createHash('sha256').update(parsed.canonical).digest('hex'),metadata.trackId);assert.equal(codec.exportTrack(expected,parsed),code);
+assert.equal(expected.readInt32LE(2),-12);assert.equal(expected.readInt32LE(10),-124);
+let offset=15;const parts=[];while(offset<expected.length){const id=expected[offset++],count=expected.readInt32LE(offset);offset+=4;for(let index=0;index<count;index++){const x=expected[offset++]-12,y=expected[offset++],z=expected[offset++]-124,rotation=expected[offset++],color=expected[offset++];let startOrder=null;if(id===92){startOrder=expected.readInt32LE(offset);offset+=4;}parts.push({id,x,y,z,rotation,color,startOrder});}}
+assert.equal(parts.length,218);assert.equal(metadata.revision,2);assert.equal(parts.filter(part=>part.id===33).length,4);assert.deepEqual(parts.find(part=>part.id===92),{id:92,x:0,y:0,z:0,rotation:0,color:0,startOrder:0});assert.equal(parts.find(part=>part.id===76).z,-124);assert(parts.every(part=>part.y===0));
+for(let z=0;z>=-124;z-=4){const part=parts.find(part=>part.x===0&&part.z===z);assert(part,'Continuous central route at z='+z);assert([25,76,92].includes(part.id),'Central route remains flat');}
+assert.equal(new Set(parts.map(part=>`${part.x},${part.y},${part.z}`)).size,parts.length,'No duplicate origin placements');
+for(const x of [-8,8])for(const z of [-40,-76]){assert(parts.some(part=>part.id===33&&part.x===x&&part.z===z));for(const delta of [4,8,12])assert(parts.some(part=>part.id===25&&part.x===x&&part.z===z-delta),'Ramp has a landing area');}
+console.log('Lab Runway revision 2 export, canonical identity, 218 parts, flat finish route, broad pad and four side ramps: PASS');

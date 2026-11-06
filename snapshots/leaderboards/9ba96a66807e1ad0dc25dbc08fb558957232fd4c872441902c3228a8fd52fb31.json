@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "source": "Kodub public leaderboard",
+  "physics": "stock",
+  "version": "0.6.3",
+  "capturedAt": "2026-11-06T03:14:38.506Z",
+  "trackId": "9ba96a66807e1ad0dc25dbc08fb558957232fd4c872441902c3228a8fd52fb31",
+  "trackName": "The Final Trials (TFT)",
+  "onlyVerified": false,
+  "total": 6,
+  "entries": [
+    {
+      "rank": 1,
+      "nickname": "Anonymous",
+      "timeMs": 607896,
+      "countryCode": null
+    },
+    {
+      "rank": 2,
+      "nickname": "Anonymous",
+      "timeMs": 639770,
+      "countryCode": null
+    },
+    {
+      "rank": 3,
+      "nickname": "Vogue",
+      "timeMs": 685870,
+      "countryCode": null
+    },
+    {
+      "rank": 4,
+      "nickname": "kolo",
+      "timeMs": 850113,
+      "countryCode": null
+    },
+    {
+      "rank": 5,
+      "nickname": "V-kostaja",
+      "timeMs": 874594,
+      "countryCode": "fi"
+    },
+    {
+      "rank": 6,
+      "nickname": "Anonymous",
+      "timeMs": 1212862,
+      "countryCode": null
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+# Validation
+
+`npm test` passes without installing dependencies. It exercises the original WebAssembly engine including true gravity, local score persistence and profile separation, optional-mechanic replay safeguards, named setups and profile migration, all 263 community-track asset paths, outbound network restrictions, six weekly-refresh scenarios, five public-snapshot scenarios, five snapshot-placement/status scenarios, browser module serving, and the expanded Lab Runway export format.
+
+Browser checks completed on the integrated game:
+
+- Default and custom physics workers start successfully.
+- Saving acceleration at 3× reloads the game and retains the value.
+- Reset to defaults and Apply restores the default profile.
+- Extra Tracks loads 263 entries and launches Turn through the real game parser.
+- Weekly Track reports the bundled source and successfully launches Zonda through the real game parser.
+- The Physics Lab workshop uses the native game font, surfaces and button styles. Its scales, numeric inputs, presets, and restart controls were visually inspected.
+- The original logo was restored from the supplied 0.6.3 files. Native menu styling, loading and button animations are preserved; the Static watermark has text-only color with its original placement and size.
+- The wider Physics Lab opens with eight illustrated tiles, including Random mix, compact preset stats, Original explicitly unchanged, and collapsed Advanced tuning. Outside-click dismissal, Advanced scrolling, Low gravity selection/persistence and Reset all/Apply were exercised in the browser. On returning from track screens, the fifth button has no repeated spawn animation.
+- The public snapshot badge loads before clicking its tab. Summer 1 displays 100 saved verified results and the reported total. Mouse wheel scrolling moved the native-style result list from its first rows to rows 18 onward; Only verified is absent. Separate tests cover full, partial, empty and missing captures, ties, out-of-range times and custom-physics comparisons.
+- Extra Tracks thumbnails load and Most played (snapshot) sorts by saved public-result totals with clear provenance. Custom-track captures can include unverified entries.
+- Physics Lab is the fifth home button and is absent from race screens. Startup opens the normal home screen.
+- Custom Tracks opens the reused Extra Tracks browser, then imports a selected track into the native pre-race screen.
+- Populated and empty Kodub snapshot tabs render separately from local times.
+- Lab Runway is accepted by the real game parser and was completed on default physics in 4.529 seconds, producing a new local personal best.
+- Expanded Lab Runway XL is accepted by the real game parser and was completed on default physics in 9.095 seconds. Its broad practice pad and four side ramps render in the real game. The original course and record stay separate.
+- That finish reopens as first place on the native local leaderboard without a load error. The 4.529-second time survives reloads, a switch to custom physics, and a return to defaults.
+- Arcade changes unlocked values while preserving locked acceleration. Named setup saving, lock persistence after Apply, and Reset all were exercised in the browser.
+- The first J press on a fresh Stunt park run starts the timer and visibly jumps. The control hint appears above the race HUD, and no Physics Lab button is present during play.
+- Extra Tracks search, favorites filtering, pagination, import, and native pre-race navigation were exercised. The weekly selection loads from Community tracks with a saved-source label.
+
+The Kodub download scripts were verified against the real service using the operating system certificate store and official web client request headers. The weekly capture refreshed successfully. The initial leaderboard metadata capture covered all 350 public boards: 344 populated boards, six empty boards, and 26,185 public rows. These score references contain only rank, public nickname, time, and country. Replay capture is separate; its exact current coverage and failures are recorded in snapshots/replays/manifest.json. Browser requests can still use the bundled weekly fallback when cross-origin access is unavailable. The GitHub workflows are included for publication but have not run on GitHub because this remains a local repository.
+
+Physics fixture results and unsupported controls are documented in PHYSICS-VALIDATION.md. Setups with boost, handbrake or jumping enabled retain best times and full settings while disabling ghosts/replays because the native recording format cannot represent the extra mechanic inputs, including remapped keys.
+
+Version 1.3 browser checks also completed:
+
+- The home button remains fifth after both Cancel and Apply in native Settings. The original logo retains its small LAB subtitle.
+- Lab key changes appear at the top of the workshop and native Controls. Remapping native acceleration to a Lab key safely reassigns the conflicting Lab action. Native acceleration and Lab keys were restored to W and B/N/J afterward.
+- Arcade completed Lab Runway XL in 7.214 seconds. Its setup PB ranks above Original's 9.095 seconds, with physics values and numbered save available on right-click.
+- Restoring a different setup and watching its local replay survives the restart and waits for native car-pattern assets before playback. The Arcade replay finishes at 7.214 seconds.
+- Summer 1's captured JerrtHu replay plays through the native replay viewer and finishes at 22.010 seconds using the captured native car style.
+- A fresh Original run appears in Recent runs with its time and Save #7. Watching that exact archived recording finishes at 9.095 seconds, including when the run ties an existing PB.
+- Space followed immediately by held acceleration starts and completes the runway. Held inputs survive the track-start transition without queuing a home-screen jump.
+- An extended 10x acceleration draft remains valid after Reset all, disabling Extended ranges, and Undo draft. Applying Original restores stock values.
+
+Automated checks cover 200 bounded run summaries with a 1 MiB recent-replay budget, independently retained setup PBs, exact run/replay lookup, save-number migration, failed-storage rollback, editable key conflicts, safe public-data parsing, native recording and car-style decoding, and ETag/304 caching. Original matches 2,500 native physics steps exactly; all extended maxima remain finite and deterministic for 10,000 steps. Every public project file must remain below 20,000,000 bytes.
+
+Final replay coverage: 19,644 playable native recordings with exact car styles across 263 populated captures, plus five empty/no-board captures. The remaining 82 of 350 requested tracks have no bundled replay capture after API failures and an interrupted bounded recovery pass. Existing score references are preserved. No replay or car style is fabricated for unavailable tracks. The manifest records those gaps, and the resume command can retry them later. The full automated suite also passes from the prepared GitHub folder. All new work remains unstaged and uncommitted.
+
+Version 1.3.1 checks: the full suite passes with the exact Analytics destination exception, blocked Firebase/score uploads, URL sanitization, no save access, denied storage/advertising, and local-preview/privacy-signal exclusions. Google property receipt is not verified from the local HTTP preview, where analytics deliberately stays off. Public Summer 1 rows select multiple ghosts with a visible selected count. Watch selected opens the native replay viewer, displays the recorded car, and Switch car changes JerrtHu to RedBull. Race selected from Arcade restores Original, reloads safely, and starts the same course as a playable race against both ghosts. Local result labels include (you). No staging, commits, pushes, or deployment were performed.

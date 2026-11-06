@@ -1,0 +1,84 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert'),path=require('path');
+const source=fs.readFileSync(path.resolve(__dirname,'../lab-physics.js'),'utf8');
+const storage=new Map();
+const oldProfile={acceleration:1.5,reverse:1,braking:1,grip:1,steering:1,downforce:1,coasting:0,maxSpeed:0,boost:0};
+storage.set('polytrack-lab.physics.v1',JSON.stringify(oldProfile));
+function open(nativeCodes=[]){
+  const handlers={};
+  const context={console,URL,Date,Math,Worker:class{constructor(){this.messages=[];}postMessage(message){this.messages.push(message);}terminate(){}},location:{href:'http://localhost/',reload(){context.reloads=(context.reloads||0)+1;}},document:{addEventListener(type,callback){handlers[type]=callback;}},localStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value)},addEventListener(type,callback){handlers['window:'+type]=callback;}};
+  context.PolyTrackLab={getNativeReservedBindingCodes:()=>nativeCodes};context.window=context;context.globalThis=context;vm.createContext(context);vm.runInContext(source,context);
+  return {lab:context.PolyTrackLab,handlers,context};
+}
+let {lab}=open();
+const oldKey=Object.entries(oldProfile).map(([key,value])=>`${key}:${value}`).join('|');
+assert.equal(lab.getPhysicsKey(),oldKey,'Existing tuning profile score keys must stay unchanged');
+assert.equal(lab.getSettings().jump,0);assert.equal(lab.getSettings().handbrake,0);
+assert.equal(lab.presets.length,8);
+const normalMaxima={acceleration:5,reverse:5,braking:5,grip:3,steering:2,downforce:5,coasting:5,maxSpeed:1500,boost:5,handbrake:5,jump:20,gravity:2};
+const extendedMaxima={acceleration:10,reverse:10,braking:10,grip:5,steering:2,downforce:10,coasting:10,maxSpeed:3000,boost:10,handbrake:5,jump:40,gravity:4};
+for(const field of lab.fields){assert.equal(field.normalMax,normalMaxima[field.key]);assert.equal(field.max,extendedMaxima[field.key]);}
+assert.equal(lab.presets.find(p=>p.id==='standard').name,'Original');
+for(const [index,id] of ['standard','arcade','drift','rocket','gentle','stunt','lowgravity'].entries()){const preset=lab.presets.find(p=>p.id===id);assert.equal(preset.presetId,index);assert.equal(lab.getSetupIdentity(preset.values).presetId,index);}
+assert.equal(lab.getSetupIdentity({...lab.getDefaults(),acceleration:1.7}).presetId,null);
+assert(lab.describeSettings({...lab.getDefaults(),gravity:.25}).includes('Gravity 0.25'));
+const enabled=lab.enableAllMechanics(lab.getDefaults());assert(enabled.boost>0&&enabled.handbrake>0&&enabled.jump>0);assert.equal(lab.getSettings().boost,0,'Enable-all returns a draft without applying it');
+const seeded=lab.getSetupHistory();assert(seeded.length>0);assert.equal(seeded[0].reason,'initial');
+assert.equal(seeded[0].saveNumber,1);
+for(let index=0;index<25;index++)lab.recordAppliedSetup({...lab.getDefaults(),acceleration:1+index/100});
+assert.equal(lab.getSetupHistory().length,20,'Setup history is bounded');assert.equal(lab.getSetupHistory()[0].values.acceleration,1.24);
+const lastSaveNumber=lab.getSetupHistory()[0].saveNumber;assert(lastSaveNumber>20,'The display counter does not reset at the history bound');assert.equal(lab.recordAppliedSetup(lab.getDefaults()).saveNumber,lastSaveNumber+1);
+lab.saveSettings(lab.getDefaults());const activeHistory=lab.getActiveSetupHistoryEntry();assert.equal(activeHistory.presetId,0);assert.equal(lab.getActiveSetupHistoryEntry().id,activeHistory.id,'Repeated metadata lookup keeps the active setup history ID');
+assert.equal(lab.presets.find(p=>p.id==='lowgravity').values.gravity,0.25);
+const stunt=lab.presets.find(p=>p.id==='stunt').values;
+assert(stunt.boost>0&&stunt.handbrake>0&&stunt.jump>0,'Stunt park makes all three optional controls discoverable');
+assert.equal(lab.presets.find(p=>p.id==='arcade').values.acceleration,1.5);
+assert.equal(lab.presets.find(p=>p.id==='rocket').values.boost,2);
+const setup=lab.saveSetup('  My jumps  ',{...lab.getDefaults(),jump:12});
+assert.equal(setup.name,'My jumps');assert.equal(lab.getSavedSetups().length,1);
+const duplicate=lab.saveSetup('MY JUMPS',{...setup.values,jump:10});
+assert.equal(duplicate.id,setup.id);assert.equal(lab.getSavedSetups().length,1);
+lab=open().lab;assert.equal(lab.getSavedSetups()[0].values.jump,10,'Named setups must survive reloading');
+lab.saveSettings(lab.getSavedSetups()[0].values);assert.equal(lab.replayEnabled(),false);
+assert(lab.getPhysicsKey().includes('jump:10'));
+lab.saveSettings(lab.getDefaults());assert.equal(lab.getPhysicsKey(),'stock');assert.equal(lab.replayEnabled(),true);
+for(const field of ['boost','handbrake','jump']){lab.saveSettings({...lab.getDefaults(),[field]:1});assert.equal(lab.replayEnabled(),false,field+' cannot use native replay');}
+lab.saveSettings(lab.getDefaults());
+for(let i=0;i<100;i++){const values=lab.randomizeSettings();for(const field of lab.fields){assert(Number.isFinite(values[field.key]));assert(values[field.key]>=field.min&&values[field.key]<=field.max);}}
+assert.equal(lab.deleteSetup(setup.id),true);assert.equal(lab.getSavedSetups().length,0);
+assert.throws(()=>lab.saveSetup('  ',{}),/name/);
+lab.saveSetup('Out of range',{acceleration:999,jump:-10});assert.equal(lab.getSavedSetups()[0].values.acceleration,lab.fields.find(field=>field.key==='acceleration').max);assert.equal(lab.getSavedSetups()[0].values.jump,0);
+storage.set('polytrack-lab.setups.v1','broken');assert.equal(lab.getSavedSetups().length,0);
+const input=open();input.lab.saveSettings(input.lab.getDefaults());
+const keydown=code=>input.handlers.keydown({code,repeat:false,target:{tagName:'BODY'}});
+keydown('KeyJ');assert.equal(input.lab.consumeJumpStart(),false,'Disabled jump must not start a timer');
+input.lab.saveSettings({...input.lab.getDefaults(),jump:8,boost:1,handbrake:1});
+keydown('KeyJ');assert.equal(input.lab.consumeJumpStart(),true,'Mock DOM without scene metadata remains supported');assert.equal(input.lab.consumeJumpStart(),false,'A jump start is consumed exactly once');
+input.context.document.body={dataset:{labScene:'home'}};
+for(const scene of ['home','browse','other']){input.context.document.body.dataset.labScene=scene;keydown('KeyJ');keydown('KeyB');keydown('KeyN');assert.equal(input.lab.consumeJumpStart(),false,'Menu actions must not start later runs');}
+input.context.document.body.dataset.labScene='game';keydown('KeyJ');assert.equal(input.lab.consumeJumpStart(),true);
+keydown('KeyJ');input.handlers['window:blur']();assert.equal(input.lab.consumeJumpStart(),false,'Blur clears queued jump starts');
+keydown('KeyJ');input.context.document.body.dataset.labScene='home';assert.equal(input.lab.consumeJumpStart(),false,'Leaving gameplay discards pending start');
+input.context.document.body.dataset.labScene='game';
+const worker=new input.context.Worker('simulation_worker.bundle.js');
+input.lab.setBindings({boost:'Q',handbrake:'KeyE',jump:'KeyF'});assert.equal(input.lab.getBindings().boost,'KeyQ');assert.equal(input.lab.getBindingLabel('jump'),'F');assert(input.lab.fields.find(field=>field.key==='jump').description.startsWith('Press F'));
+keydown('KeyJ');assert.equal(input.lab.consumeJumpStart(),false,'Old jump key stops working after rebind');keydown('KeyF');assert.equal(input.lab.consumeJumpStart(),true);keydown('KeyQ');assert.equal(worker.messages.at(-1).boost,true);input.handlers.keyup({code:'KeyQ'});assert.equal(worker.messages.at(-1).boost,false);
+keydown('KeyE');assert.equal(worker.messages.at(-1).handbrake,true);input.lab.setBindings({boost:'KeyB',handbrake:'KeyN',jump:'KeyJ'});assert.equal(worker.messages.at(-1).handbrake,false,'Rebinding releases held actions');assert.equal(worker.messages.at(-1).cancelJump,true);
+input.lab.setBindings({boost:'KeyQ',handbrake:'KeyE',jump:'KeyF'});assert.equal(open().lab.getBindings().jump,'KeyF','Bindings persist across reloads');
+assert.throws(()=>input.lab.setBindings({boost:'KeyW',handbrake:'KeyN',jump:'KeyJ'}),/original driving controls/);assert.throws(()=>input.lab.setBindings({boost:'KeyB',handbrake:'KeyB',jump:'KeyJ'}),/different/);assert.throws(()=>input.lab.setBindings({boost:'Space',handbrake:'KeyN',jump:'KeyJ'}),/letter/);
+assert(input.lab.getAllowedBindingCodes().includes('KeyQ'));assert(!input.lab.getAllowedBindingCodes().includes('KeyH'));
+input.handlers.keydown({code:'KeyF',ctrlKey:true,repeat:false,target:{tagName:'BODY'}});assert.equal(input.lab.consumeJumpStart(),false,'Browser shortcuts must not trigger mechanic actions');
+storage.set('polytrack-lab.bindings.v1','{"boost":"KeyW","handbrake":"KeyN","jump":"KeyJ"}');assert.equal(open().lab.getBindings().boost,'KeyB','Invalid saved bindings recover to defaults');
+const applied=open(),gentle=applied.lab.presets.find(p=>p.id==='gentle').values;applied.lab.applySettings(gentle);assert.equal(applied.context.reloads,1);const appliedEntry=applied.lab.getActiveSetupHistoryEntry();assert.equal(appliedEntry.presetId,4);assert.equal(appliedEntry.reason,'apply');assert.equal(open().lab.getActiveSetupHistoryEntry().id,appliedEntry.id,'Applied history metadata survives reload');
+assert.equal(open().lab.getActiveSetupHistoryEntry().saveNumber,appliedEntry.saveNumber,'Display save numbering survives reload');
+const failed=open(),previousKey=failed.lab.getPhysicsKey(),write=failed.context.localStorage.setItem;failed.context.localStorage.setItem=(key,value)=>{if(key==='polytrack-lab.setup-history.v1')throw Error('history quota');return write(key,value);};assert.throws(()=>failed.lab.applySettings(failed.lab.getDefaults()),/history quota/);assert.equal(failed.lab.getPhysicsKey(),previousKey,'History save failure rolls back active settings');assert.equal(failed.context.reloads,undefined,'Failed Apply does not restart the game');
+const failedRollback=open(),rollbackPreviousKey=failedRollback.lab.getPhysicsKey(),rollbackPreviousValues=JSON.stringify(failedRollback.lab.getSettings()),rollbackWrite=failedRollback.context.localStorage.setItem;let settingsWrites=0;const historyFailure=Error('history quota again'),rollbackFailure=Error('rollback storage blocked');failedRollback.context.localStorage.setItem=(key,value)=>{if(key==='polytrack-lab.setup-history.v1')throw historyFailure;if(key==='polytrack-lab.physics.v1'&&++settingsWrites>1)throw rollbackFailure;return rollbackWrite(key,value);};assert.throws(()=>failedRollback.lab.applySettings(failedRollback.lab.getDefaults()),error=>error.message.includes('history quota again')&&error.message.includes('retry Apply before reloading')&&error.cause===historyFailure&&error.rollbackError===rollbackFailure);assert.equal(failedRollback.lab.getPhysicsKey(),rollbackPreviousKey,'A failed persistent rollback must still restore in-memory physics identity');assert.equal(JSON.stringify(failedRollback.lab.getSettings()),rollbackPreviousValues);assert.equal(failedRollback.context.reloads,undefined,'Double storage failure must not restart');
+const oldHistory=lab.getSetupHistory().slice(0,3).map(({saveNumber,...entry})=>entry);storage.set('polytrack-lab.setup-history.v1',JSON.stringify(oldHistory));const migrated=lab.getSetupHistory();assert.equal(migrated.map(entry=>entry.saveNumber).join(','),'3,2,1','Legacy entries receive stable ordinal numbers');const beforeMigrationCounter=Number(storage.get('polytrack-lab.setup-history-counter.v1'));assert(lab.recordAppliedSetup(lab.getDefaults()).saveNumber>beforeMigrationCounter,'Legacy migration cannot reuse a reserved save number');
+const dynamic=open();let nativeCodes=[];dynamic.lab.getNativeReservedBindingCodes=()=>nativeCodes;dynamic.lab.saveSettings(dynamic.lab.enableAllMechanics(dynamic.lab.getDefaults()));dynamic.lab.setBindings({boost:'KeyF',handbrake:'KeyN',jump:'KeyJ'});const dynamicWorker=new dynamic.context.Worker('simulation_worker.bundle.js');const dynamicKey=code=>dynamic.handlers.keydown({code,repeat:false,target:{tagName:'BODY'}});
+dynamicKey('KeyF');assert.equal(dynamicWorker.messages.at(-1).boost,true);
+nativeCodes=['KeyF'];assert(!dynamic.lab.getAllowedBindingCodes().includes('KeyF'));assert.throws(()=>dynamic.lab.setBindings({boost:'KeyF',handbrake:'KeyN',jump:'KeyJ'}),/already used/);dynamic.lab.reconcileBindings();assert.equal(dynamic.lab.getBindings().boost,'KeyB','New native F shortcut moves boost to its free default B');assert.equal(dynamic.lab.getBindings().handbrake,'KeyN');assert.equal(dynamic.lab.getBindings().jump,'KeyJ');assert.equal(dynamicWorker.messages.at(-1).boost,false,'Reconciliation releases a held conflicting mechanic');assert.equal(dynamic.lab.bindingNotice,'Lab keys adjusted to avoid driving shortcuts.');
+nativeCodes=['KeyF','KeyB'];dynamic.lab.reconcileBindings();assert.equal(dynamic.lab.getBindings().boost,'KeyE','A reserved default uses the first free allowed letter');const count=dynamicWorker.messages.length;dynamicKey('KeyB');dynamicKey('KeyF');assert.equal(dynamicWorker.messages.length,count,'Native shortcut presses cannot also fire old mechanic bindings');dynamicKey('KeyE');assert.equal(dynamicWorker.messages.at(-1).boost,true);
+dynamic.lab.setBindings({boost:'KeyQ',handbrake:'KeyN',jump:'KeyJ'});assert.equal(dynamic.lab.bindingNotice,'','Manual binding changes clear adjustment notices');
+nativeCodes='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').filter(letter=>!['N','J'].includes(letter)).map(letter=>'Key'+letter);dynamic.lab.reconcileBindings();assert.equal(dynamic.lab.getBindings().boost,'KeyQ','Fewer than three free keys preserve the stored mapping');assert.equal(dynamic.lab.isMechanicBindingEnabled('boost'),false);assert.equal(dynamic.lab.isMechanicBindingEnabled('jump'),true);assert(dynamic.lab.bindingNotice.includes('not enough free'));const blockedCount=dynamicWorker.messages.length;dynamicKey('KeyQ');assert.equal(dynamicWorker.messages.length,blockedCount,'Unresolved conflicting actions remain disabled');dynamicKey('KeyJ');assert.equal(dynamic.lab.consumeJumpStart(),true,'A nonconflicting action remains usable');
+nativeCodes='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(letter=>'Key'+letter);dynamic.lab.reconcileBindings();dynamicKey('KeyJ');assert.equal(dynamic.lab.consumeJumpStart(),false,'A fully reserved keyboard cannot queue a Lab jump');assert.equal(dynamicWorker.messages.at(-1).boost,false);
+storage.set('polytrack-lab.bindings.v1',JSON.stringify({boost:'KeyF',handbrake:'KeyN',jump:'KeyJ'}));const loadedConflict=open(['KeyF']);assert.equal(loadedConflict.lab.getBindings().boost,'KeyF','Stored custom keys survive loading until conflict reconciliation');loadedConflict.lab.reconcileBindings();assert.equal(loadedConflict.lab.getBindings().boost,'KeyB');assert.equal(open(['KeyF']).lab.getBindings().boost,'KeyB','Automatic replacement persists');
+console.log('Presets, numeric identity, bounded setup history, saved setups, editable bindings, input scenes, jump starts and old score-key migration: PASS');

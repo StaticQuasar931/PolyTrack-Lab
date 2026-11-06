@@ -1,0 +1,96 @@
+/* Physics controls use the same flat surfaces, type and buttons as Kodub's settings. */
+.ptlab-dialog{width:min(1080px,calc(100vw - 48px));height:100dvh;max-width:none;max-height:100dvh;margin:0 auto;padding:0;border:0;border-radius:0;background:var(--surface-color);color:var(--text-color);overflow:hidden}
+.ptlab-dialog *{box-sizing:border-box;font-family:ForcedSquare,Arial,sans-serif;font-style:italic;font-weight:normal}
+.ptlab-dialog::backdrop{background:rgba(20,20,45,.8);backdrop-filter:blur(4px)}
+.ptlab-shell{display:flex;flex-direction:column;height:100%;max-height:100dvh}
+.ptlab-header{flex-shrink:0;background:var(--surface-color);padding:10px}
+.ptlab-title{margin:0;text-align:center;font-size:38px;line-height:1.2}
+.ptlab-eyebrow,.ptlab-subtitle{display:none}
+.ptlab-header-right{text-align:center;margin-top:6px}
+.ptlab-active-badge{font-size:18px;opacity:.5}
+.ptlab-workshop-scroll{flex:1;min-height:0;overflow-y:auto;background:var(--surface-secondary-color);padding:10px}
+.ptlab-section-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px}
+.ptlab-section-top h2{margin:0 0 8px;font-size:26px}
+.ptlab-section-top p{margin:0;font-size:18px;line-height:1.3;opacity:.7}
+.ptlab-presets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 10px}
+.ptlab-dialog .ptlab-preset{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px 10px;text-align:center;border:0;border-radius:0;min-height:150px;position:relative}
+.ptlab-icon{display:block;width:56px;height:56px;flex-shrink:0;object-fit:contain}
+.ptlab-preset .ptlab-selected{display:none;position:absolute;top:8px;right:12px;width:20px;height:20px}
+.ptlab-preset[aria-pressed=true] .ptlab-selected{display:block}
+.ptlab-preset strong{font-size:24px}
+.ptlab-preset span{font-size:16px;line-height:1.3;opacity:.7}
+.ptlab-preset .ptlab-preset-stats{display:flex;justify-content:center;flex-wrap:wrap;gap:5px;font-size:14px;opacity:1;min-height:20px}
+.ptlab-preset-stats>span{padding:2px 5px;background:var(--surface-transparent-color);font-size:14px;opacity:.9;white-space:nowrap}
+.lab-bindings{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:10px;padding:10px;background:var(--surface-color);color:var(--text-color);pointer-events:auto}
+.lab-bindings h3{margin:0 12px 0 0;font-size:22px;font-weight:normal}
+.lab-bindings label{font:italic 18px ForcedSquare,Arial,sans-serif;display:flex;align-items:center;gap:6px}
+.lab-bindings select{padding:4px 8px;font:italic 20px ForcedSquare,Arial,sans-serif;color:var(--text-color);background:var(--button-color);border:0;pointer-events:auto}
+.lab-bindings>.button{font-size:18px;padding:6px 10px}
+.lab-bindings-note{font-size:16px;line-height:1.2}
+.ptlab-preset[aria-pressed=true]{background-color:var(--button-hover-color)}
+.ptlab-dialog .ptlab-random{padding:8px 12px;font-size:20px;white-space:nowrap}
+.ptlab-tuning-heading{margin-top:24px;padding-bottom:8px;border-bottom:2px solid var(--text-color)}
+.ptlab-lock-summary{font-size:16px;opacity:.6;white-space:nowrap}
+.ptlab-fields{display:block}
+.ptlab-field{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,1fr);gap:10px 20px;margin:0 10px;padding:18px 0;border:0;border-bottom:1px solid #ffffff40;border-radius:0;background:none}
+.ptlab-field-top{grid-column:1;grid-row:1;display:flex;align-items:center;gap:10px}
+.ptlab-field-label{font-size:27px;line-height:1.2}
+.ptlab-help{position:relative;font-size:18px;opacity:.7;cursor:help;outline-offset:4px}
+.ptlab-tooltip{display:none;position:absolute;top:24px;left:0;width:260px;z-index:5;padding:12px;background:var(--surface-tertiary-color);color:var(--text-color);font-size:18px;line-height:1.4;pointer-events:none}
+.ptlab-help:hover,.ptlab-help:focus{opacity:1}
+.ptlab-help:hover .ptlab-tooltip,.ptlab-help:focus .ptlab-tooltip{display:block}
+.ptlab-value-row{grid-column:2;grid-row:1;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ptlab-current-value{font-size:16px;opacity:.5}
+.ptlab-value-box{display:flex;align-items:center;gap:8px}
+.ptlab-draft-label,.ptlab-unit{font-size:16px;opacity:.7}
+.ptlab-dialog input[type=number].ptlab-number{width:70px;padding:4px;background:var(--surface-tertiary-color);color:var(--text-color);border:0;border-radius:0;text-align:right;font-size:26px}
+.ptlab-number:invalid{color:#f99!important}
+.ptlab-slider{grid-column:2;grid-row:2;position:relative;padding-top:10px}
+.ptlab-dialog input[type=range].ptlab-range{width:100%;margin:8px 0;accent-color:var(--text-color)}
+.ptlab-default-marker{position:absolute;top:26px;width:1px;height:8px;background:var(--text-color);pointer-events:none;opacity:.5}
+.ptlab-scale{grid-column:2;grid-row:3;display:flex;justify-content:space-between;gap:10px;font-size:14px;opacity:.6}
+.ptlab-scale span:last-child{text-align:right}
+.ptlab-field-effect{grid-column:1;grid-row:2/4;margin:0;font-size:18px;line-height:1.4;opacity:.7}
+.ptlab-field-bottom{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px}
+.ptlab-dialog .ptlab-reset-field,.ptlab-dialog .ptlab-lock{padding:6px 10px;font-size:18px}
+.ptlab-lock[aria-pressed=true]{background-color:var(--button-hover-color)}
+.ptlab-extra-warning{margin:10px;padding:10px;background:var(--surface-tertiary-color);font-size:18px;line-height:1.4}
+.ptlab-extra-warning[hidden]{display:none}
+.ptlab-saved-section{margin:20px 10px 10px;border:0;border-top:2px solid var(--text-color)}
+.ptlab-saved-section summary{padding:12px 0;font-size:24px;cursor:pointer}
+.ptlab-saved-intro,.ptlab-muted{font-size:18px;line-height:1.4;opacity:.7}
+.ptlab-save-form{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.ptlab-setup-name-label{font-size:20px}
+.ptlab-dialog input[type=text].ptlab-setup-name{flex:1;min-width:140px;background:var(--surface-tertiary-color);border:0;color:var(--text-color);font-size:22px;padding:8px}
+.ptlab-saved-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #ffffff40}
+.ptlab-saved-row strong{font-size:22px;overflow-wrap:anywhere}
+.ptlab-saved-actions{display:flex;gap:8px}
+.ptlab-status{flex-shrink:0;padding:10px;background:var(--surface-color);font-size:16px;line-height:1.3;opacity:.7}
+.ptlab-status.ptlab-error{color:#f99;opacity:1}
+.ptlab-footer{display:grid;grid-template-columns:auto 1fr;gap:8px;padding:10px;background:var(--surface-color);flex-shrink:0}
+.ptlab-state-copy{grid-column:1/-1;grid-row:1;display:flex;flex-direction:column;gap:4px;font-size:14px;line-height:1.2;opacity:.6}
+.ptlab-change-summary{font-size:18px}
+.ptlab-dialog .ptlab-close{grid-column:1;grid-row:2;align-self:end;padding:8px 16px;font-size:24px}
+.ptlab-actions{grid-column:2;grid-row:2;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
+.ptlab-dialog .ptlab-primary,.ptlab-dialog .ptlab-secondary,.ptlab-dialog .ptlab-text-button{padding:8px 12px;font-size:20px}
+.ptlab-dialog button:disabled{cursor:default}
+.ptlab-dialog button,.ptlab-dialog input,.ptlab-dialog summary{pointer-events:auto}
+.ptlab-workshop-scroll{pointer-events:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+.ptlab-advanced{margin:20px 10px 10px;border-top:2px solid var(--text-color)}
+.ptlab-advanced>summary{padding:14px 0;font-size:26px;cursor:pointer}
+.ptlab-extended{display:flex;align-items:center;gap:8px;font-size:18px;padding:8px 0;pointer-events:auto}
+.ptlab-extended input{width:20px;height:20px;accent-color:var(--button-hover-color)}
+.ptlab-advanced .ptlab-section-top{margin-left:0;margin-right:0}
+.ptlab-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 28px}
+.ptlab-field{grid-template-columns:1fr;margin:0;padding:18px 0}
+.ptlab-field-top,.ptlab-value-row,.ptlab-slider,.ptlab-scale,.ptlab-field-effect,.ptlab-field-bottom{grid-column:1;grid-row:auto}
+.ptlab-field-top .ptlab-icon{width:28px;height:28px}
+.ptlab-field-label{font-size:24px}
+.ptlab-field-effect{min-height:48px}
+.ptlab-status[hidden]{display:none}
+.ptlab-state-copy{flex-direction:row;justify-content:space-between;align-items:center;flex-wrap:wrap}
+@media(max-width:850px){.ptlab-presets{grid-template-columns:repeat(3,minmax(0,1fr))}.ptlab-fields{grid-template-columns:1fr}.ptlab-state-copy{gap:6px}}
+@media(max-width:600px){.ptlab-dialog{width:calc(100vw - 24px)}.ptlab-presets{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.ptlab-dialog .ptlab-preset{min-height:132px}.ptlab-preset span{font-size:14px}.ptlab-preset strong{font-size:22px}}
+@media(max-width:600px){.ptlab-field{grid-template-columns:1fr}.ptlab-field-top,.ptlab-value-row,.ptlab-slider,.ptlab-scale,.ptlab-field-effect,.ptlab-field-bottom{grid-column:1;grid-row:auto}.ptlab-field-label{font-size:24px}.ptlab-field-effect{font-size:16px}.ptlab-section-top{flex-wrap:wrap}.ptlab-lock-summary{white-space:normal}.ptlab-primary,.ptlab-secondary,.ptlab-text-button{font-size:18px}.ptlab-presets{gap:6px}.ptlab-preset{flex-basis:140px}.ptlab-saved-row{flex-wrap:wrap}}
+
+/* The workbench frame leaves the original menu surfaces in place. */

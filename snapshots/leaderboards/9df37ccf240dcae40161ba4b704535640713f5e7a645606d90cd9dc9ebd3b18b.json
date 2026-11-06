@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "source": "Kodub public leaderboard",
+  "physics": "stock",
+  "version": "0.6.3",
+  "capturedAt": "2026-11-06T03:14:38.506Z",
+  "trackId": "9df37ccf240dcae40161ba4b704535640713f5e7a645606d90cd9dc9ebd3b18b",
+  "trackName": "Week 20 Short - 1",
+  "onlyVerified": false,
+  "total": 5,
+  "entries": [
+    {
+      "rank": 1,
+      "nickname": "Zephyrteam",
+      "timeMs": 8408,
+      "countryCode": "cn"
+    },
+    {
+      "rank": 2,
+      "nickname": "Carljr",
+      "timeMs": 8477,
+      "countryCode": "cn"
+    },
+    {
+      "rank": 3,
+      "nickname": "Anonymous",
+      "timeMs": 8517,
+      "countryCode": null
+    },
+    {
+      "rank": 4,
+      "nickname": "Serphal",
+      "timeMs": 8555,
+      "countryCode": "se"
+    },
+    {
+      "rank": 5,
+      "nickname": "RADICAL_TERROR 8440",
+      "timeMs": 8759,
+      "countryCode": "in"
+    }
+  ]
+}

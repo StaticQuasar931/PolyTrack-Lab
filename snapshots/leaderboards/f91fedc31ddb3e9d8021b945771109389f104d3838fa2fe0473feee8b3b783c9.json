@@ -1,0 +1,199 @@
+{
+  "schemaVersion": 1,
+  "source": "Kodub public leaderboard",
+  "physics": "stock",
+  "version": "0.6.3",
+  "capturedAt": "2026-11-06T03:14:38.506Z",
+  "trackId": "f91fedc31ddb3e9d8021b945771109389f104d3838fa2fe0473feee8b3b783c9",
+  "trackName": "spa francorchamps",
+  "onlyVerified": false,
+  "total": 31,
+  "entries": [
+    {
+      "rank": 1,
+      "nickname": "Algorithm",
+      "timeMs": 170909,
+      "countryCode": "no"
+    },
+    {
+      "rank": 2,
+      "nickname": "advait",
+      "timeMs": 179297,
+      "countryCode": null
+    },
+    {
+      "rank": 3,
+      "nickname": "Redbull Oracle",
+      "timeMs": 181003,
+      "countryCode": null
+    },
+    {
+      "rank": 4,
+      "nickname": "Hyperion",
+      "timeMs": 181380,
+      "countryCode": "sg"
+    },
+    {
+      "rank": 5,
+      "nickname": "Nordy123",
+      "timeMs": 183100,
+      "countryCode": "us"
+    },
+    {
+      "rank": 6,
+      "nickname": "⚙️First k丨LLER (𝓣𝓮𝓪𝓶 ⊥_⊥)",
+      "timeMs": 187341,
+      "countryCode": "us"
+    },
+    {
+      "rank": 7,
+      "nickname": "Anonymous",
+      "timeMs": 193293,
+      "countryCode": null
+    },
+    {
+      "rank": 8,
+      "nickname": "Fahhboy",
+      "timeMs": 194080,
+      "countryCode": "in"
+    },
+    {
+      "rank": 9,
+      "nickname": "Red BUll CAN ",
+      "timeMs": 203071,
+      "countryCode": "th"
+    },
+    {
+      "rank": 10,
+      "nickname": "j",
+      "timeMs": 209939,
+      "countryCode": "af"
+    },
+    {
+      "rank": 11,
+      "nickname": "Anonymous",
+      "timeMs": 210224,
+      "countryCode": null
+    },
+    {
+      "rank": 12,
+      "nickname": "stijn",
+      "timeMs": 210764,
+      "countryCode": "nl"
+    },
+    {
+      "rank": 13,
+      "nickname": "MV1",
+      "timeMs": 210957,
+      "countryCode": "us"
+    },
+    {
+      "rank": 14,
+      "nickname": "Anonymous",
+      "timeMs": 211902,
+      "countryCode": null
+    },
+    {
+      "rank": 15,
+      "nickname": "sticktostick youtube",
+      "timeMs": 216176,
+      "countryCode": "be"
+    },
+    {
+      "rank": 16,
+      "nickname": "TT2",
+      "timeMs": 219307,
+      "countryCode": "nl"
+    },
+    {
+      "rank": 17,
+      "nickname": "yes try",
+      "timeMs": 223768,
+      "countryCode": "sg"
+    },
+    {
+      "rank": 18,
+      "nickname": "metsuga",
+      "timeMs": 234054,
+      "countryCode": "us"
+    },
+    {
+      "rank": 19,
+      "nickname": "Zukinator",
+      "timeMs": 235376,
+      "countryCode": "gt"
+    },
+    {
+      "rank": 20,
+      "nickname": "ppppppppee",
+      "timeMs": 237856,
+      "countryCode": null
+    },
+    {
+      "rank": 21,
+      "nickname": "DAN134",
+      "timeMs": 238894,
+      "countryCode": "ca"
+    },
+    {
+      "rank": 22,
+      "nickname": "fUnNy cHuD",
+      "timeMs": 240388,
+      "countryCode": "al"
+    },
+    {
+      "rank": 23,
+      "nickname": "themyth",
+      "timeMs": 247450,
+      "countryCode": "us"
+    },
+    {
+      "rank": 24,
+      "nickname": "mishra_00",
+      "timeMs": 264706,
+      "countryCode": null
+    },
+    {
+      "rank": 25,
+      "nickname": "BMW",
+      "timeMs": 270191,
+      "countryCode": null
+    },
+    {
+      "rank": 26,
+      "nickname": "fih",
+      "timeMs": 275433,
+      "countryCode": "us"
+    },
+    {
+      "rank": 27,
+      "nickname": "Thovis123",
+      "timeMs": 285845,
+      "countryCode": "hr"
+    },
+    {
+      "rank": 28,
+      "nickname": "Anonymous",
+      "timeMs": 292232,
+      "countryCode": null
+    },
+    {
+      "rank": 29,
+      "nickname": "AstralThunder.n0de",
+      "timeMs": 297413,
+      "countryCode": null
+    },
+    {
+      "rank": 30,
+      "nickname": "Ｌｅａｆ🍂",
+      "timeMs": 304689,
+      "countryCode": "cy"
+    },
+    {
+      "rank": 31,
+      "nickname": "difm",
+      "timeMs": 356792,
+      "countryCode": "kr"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "source": "Kodub public leaderboard",
+  "physics": "stock",
+  "version": "0.6.3",
+  "capturedAt": "2026-11-06T03:14:38.506Z",
+  "trackId": "9ed154ea5ccd599d17897c3e32d2a323f9314fc558480a8c8f95d779827ffbf0",
+  "trackName": "circular",
+  "onlyVerified": false,
+  "total": 1,
+  "entries": [
+    {
+      "rank": 1,
+      "nickname": "Zzzacul",
+      "timeMs": 143735,
+      "countryCode": "ca"
+    }
+  ]
+}

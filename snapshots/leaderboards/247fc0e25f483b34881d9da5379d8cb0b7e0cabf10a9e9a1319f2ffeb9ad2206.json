@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "source": "Kodub public leaderboard",
+  "physics": "stock",
+  "version": "0.6.3",
+  "capturedAt": "2026-11-06T03:14:38.506Z",
+  "trackId": "247fc0e25f483b34881d9da5379d8cb0b7e0cabf10a9e9a1319f2ffeb9ad2206",
+  "trackName": "looping hell",
+  "onlyVerified": false,
+  "total": 2,
+  "entries": [
+    {
+      "rank": 1,
+      "nickname": "Flayer🦥",
+      "timeMs": 34864,
+      "countryCode": "fr"
+    },
+    {
+      "rank": 2,
+      "nickname": "Anonymous",
+      "timeMs": 38786,
+      "countryCode": null
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "id": "lab-runway",
+  "name": "Lab Runway XL",
+  "author": "PolyTrack Lab",
+  "description": "A long straight run, a broad drift pad, and four optional side launch ramps. Drive straight for the finish or explore the sides to test your setup.",
+  "trackId": "cd9bcb8f107d4de733ecf5c59daaed2d9b83ecb80f790c8e897fc830af28e6dd",
+  "trackPath": "lab-tracks/runway.track",
+  "thumbnailUrl": "lab-tracks/runway.svg",
+  "revision": 2,
+  "features": [
+    "Long straight",
+    "Open drift pad",
+    "Four side ramps"
+  ],
+  "parts": 218
+}

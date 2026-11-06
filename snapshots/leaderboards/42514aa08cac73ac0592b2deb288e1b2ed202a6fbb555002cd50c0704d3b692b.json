@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "source": "Kodub public leaderboard",
+  "physics": "stock",
+  "version": "0.6.3",
+  "capturedAt": "2026-11-06T03:14:38.506Z",
+  "trackId": "42514aa08cac73ac0592b2deb288e1b2ed202a6fbb555002cd50c0704d3b692b",
+  "trackName": "It Can Be Done",
+  "onlyVerified": false,
+  "total": 21,
+  "entries": [
+    {
+      "rank": 1,
+      "nickname": "Banana_Apples",
+      "timeMs": 34268,
+      "countryCode": "bd"
+    },
+    {
+      "rank": 2,
+      "nickname": "PsiGua Loves Seals",
+      "timeMs": 35989,
+      "countryCode": null
+    },
+    {
+      "rank": 3,
+      "nickname": "PsiGua Loves Seals",
+      "timeMs": 36051,
+      "countryCode": null
+    },
+    {
+      "rank": 4,
+      "nickname": "??",
+      "timeMs": 36468,
+      "countryCode": "se"
+    },
+    {
+      "rank": 5,
+      "nickname": "cholcotaty",
+      "timeMs": 36747,
+      "countryCode": null
+    },
+    {
+      "rank": 6,
+      "nickname": "AGt_MЯMΞ🏁",
+      "timeMs": 38432,
+      "countryCode": null
+    },
+    {
+      "rank": 7,
+      "nickname": "MooMooCow",
+      "timeMs": 38494,
+      "countryCode": "cn"
+    },
+    {
+      "rank": 8,
+      "nickname": "Camera📷",
+      "timeMs": 49360,
+      "countryCode": null
+    },
+    {
+      "rank": 9,
+      "nickname": "yes try",
+      "timeMs": 52432,
+      "countryCode": "sg"
+    },
+    {
+      "rank": 10,
+      "nickname": "AP",
+      "timeMs": 60146,
+      "countryCode": "dk"
+    },
+    {
+      "rank": 11,
+      "nickname": "PsiGua loves Seals",
+      "timeMs": 73403,
+      "countryCode": null
+    },
+    {
+      "rank": 12,
+      "nickname": "ㅤㅤㅤㅤㅤ",
+      "timeMs": 80746,
+      "countryCode": null
+    },
+    {
+      "rank": 13,
+      "nickname": "Anonymous",
+      "timeMs": 100125,
+      "countryCode": null
+    },
+    {
+      "rank": 14,
+      "nickname": "Anonymous",
+      "timeMs": 113091,
+      "countryCode": null
+    },
+    {
+      "rank": 15,
+      "nickname": "rory",
+      "timeMs": 138712,
+      "countryCode": "za"
+    },
+    {
+      "rank": 16,
+      "nickname": "I love seals",
+      "timeMs": 141508,
+      "countryCode": null
+    },
+    {
+      "rank": 17,
+      "nickname": "Anonymous",
+      "timeMs": 178822,
+      "countryCode": null
+    },
+    {
+      "rank": 18,
+      "nickname": "Tom",
+      "timeMs": 225073,
+      "countryCode": "vn"
+    },
+    {
+      "rank": 19,
+      "nickname": "V33R_P",
+      "timeMs": 246086,
+      "countryCode": "gb"
+    },
+    {
+      "rank": 20,
+      "nickname": "Anonymous",
+      "timeMs": 415178,
+      "countryCode": null
+    },
+    {
+      "rank": 21,
+      "nickname": "MrBeast",
+      "timeMs": 1066443,
+      "countryCode": "at"
+    }
+  ]
+}
