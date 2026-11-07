@@ -147,12 +147,12 @@
       const target=new URL(url,location.href);
       const physics=target.pathname.endsWith('/simulation_worker.bundle.js');
       const dynamicCourse=physics&&!!window.PolyTrackLab?.getActiveCourse?.();
-      if(physics){target.pathname=target.pathname.replace(/simulation_worker\.bundle\.js$/,'lab-physics-worker.js');target.searchParams.set('lab','1.7.0');target.hash=encodeURIComponent(JSON.stringify({...settings,...(dynamicCourse?{_dynamicCourse:true}:{})}));}
+      if(physics){target.pathname=target.pathname.replace(/simulation_worker\.bundle\.js$/,'lab-physics-worker.js');target.searchParams.set('lab','1.8.0');target.hash=encodeURIComponent(JSON.stringify({...settings,...(dynamicCourse?{_dynamicCourse:true}:{})}));}
       super(physics?target.href:url,options);
       this.labPhysicsURL=physics?target.href:null;this.labWorkerOptions=options;this.labReplacement=null;this.labInitMessage=null;
       if(physics){workers.add(this);if(dynamicCourse)courseWorkers.set(this,{...settings});this.addEventListener?.('message',event=>{if(event.data?.labReplayError)window.dispatchEvent(new CustomEvent('polytrack-lab-replay-error',{detail:{message:event.data.message}}));});this.postMessage({labPhysics:true,boost:boostHeld,handbrake:handbrakeHeld,jumpSequence});}
     }
-    postMessage(message,...args){if(this.labPhysicsURL&&message?.messageType===0)this.labInitMessage=message;return this.labReplacement?this.labReplacement.postMessage(message,...args):super.postMessage(message,...args);}
+    postMessage(message,...args){if(this.labPhysicsURL&&message?.messageType===0)this.labInitMessage=message;const result=this.labReplacement?this.labReplacement.postMessage(message,...args):super.postMessage(message,...args);if(this.labPhysicsURL&&message?.messageType===0){const practice=window.PolyTrackLab?.getPracticePacket?.();if(practice)this.postMessage({labPractice:practice});}return result;}
     restartPhysics(){
       if(!this.labInitMessage)throw Error('The physics engine is not ready to restart.');
       const target=new URL(this.labPhysicsURL);target.hash=encodeURIComponent(JSON.stringify(settings));
@@ -161,7 +161,7 @@
       const timer=setTimeout(()=>{if(!settled){settled=true;rejectReady(Error('Physics restart timed out.'));}},15000);
       replacement.addEventListener('message',event=>{if(this.labReplacement!==replacement)return;if(event.data?.labReady){if(!settled){settled=true;clearTimeout(timer);resolveReady();}return;}this.dispatchEvent(new MessageEvent('message',{data:event.data}));});
       replacement.addEventListener('error',event=>{if(this.labReplacement!==replacement)return;if(!settled){settled=true;clearTimeout(timer);event.preventDefault?.();rejectReady(Error(event.message||'Physics could not restart.'));}else this.dispatchEvent(new ErrorEvent('error',{message:event.message,filename:event.filename,lineno:event.lineno,colno:event.colno,error:event.error}));});
-      try{replacement.postMessage(this.labInitMessage);replacement.postMessage({labPhysics:true,boost:false,handbrake:false,jumpSequence});}catch(error){replacement.terminate();throw error;}
+      try{replacement.postMessage(this.labInitMessage);const practice=window.PolyTrackLab?.getPracticePacket?.();if(practice)replacement.postMessage({labPractice:practice});replacement.postMessage({labPhysics:true,boost:false,handbrake:false,jumpSequence});}catch(error){settled=true;clearTimeout(timer);replacement.terminate();throw error;}
       if(this.labReplacement)this.labReplacement.terminate();else super.terminate();this.labReplacement=replacement;return ready;
     }
     terminate(){try{this.postMessage({labDisposeReplays:true});}catch{}this.labReplacement?.terminate();workers.delete(this);courseWorkers.delete(this);super.terminate();}
@@ -181,7 +181,8 @@
   document.addEventListener('keydown',event=>{if(!inGameScene()||event.repeat||event.ctrlKey||event.altKey||event.metaKey||!getAllowedBindingCodes().includes(event.code)||/^(INPUT|TEXTAREA|SELECT)$/.test(event.target?.tagName)||event.target?.isContentEditable)return;if(event.code===bindings.boost&&settings.boost>0)boostHeld=true;else if(event.code===bindings.handbrake&&settings.handbrake>0)handbrakeHeld=true;else if(event.code===bindings.jump&&settings.jump>0){jumpSequence++;jumpStartPending=true;}else return;sendActions();});
   document.addEventListener('keyup',event=>{if(event.code===bindings.boost)boostHeld=false;else if(event.code===bindings.handbrake)handbrakeHeld=false;else return;sendActions();});
   window.addEventListener('blur',()=>{boostHeld=false;handbrakeHeld=false;jumpStartPending=false;sendActions(true);});
-  window.PolyTrackLab={...(window.PolyTrackLab||{}),rebuildPhysicsWorkers,fields,presets,getSavedSetups,saveSetup,deleteSetup,randomizeSettings,consumeJumpStart,getBindings,setBindings,reconcileBindings,bindingNotice,isMechanicBindingEnabled,getBindingLabel,getAllowedBindingCodes,getSetupIdentity,describeSettings,enableAllMechanics,getSetupHistory,recordAppliedSetup,getActiveSetupHistoryEntry,sendCourseSettings,getSettings:()=>({...settings}),canReplay:replayEnabled,replayEnabled,getPhysicsKey:()=>fingerprint(settings),getDefaults:()=>normalize(null),
+  const sendPractice=practice=>{for(const worker of workers)worker.postMessage({labPractice:practice});};
+  window.PolyTrackLab={...(window.PolyTrackLab||{}),sendPractice,rebuildPhysicsWorkers,fields,presets,getSavedSetups,saveSetup,deleteSetup,randomizeSettings,consumeJumpStart,getBindings,setBindings,reconcileBindings,bindingNotice,isMechanicBindingEnabled,getBindingLabel,getAllowedBindingCodes,getSetupIdentity,describeSettings,enableAllMechanics,getSetupHistory,recordAppliedSetup,getActiveSetupHistoryEntry,sendCourseSettings,getSettings:()=>({...settings}),canReplay:replayEnabled,replayEnabled,getPhysicsKey:()=>fingerprint(settings),getDefaults:()=>normalize(null),
     saveSettings(input){const next=normalize(input);localStorage.setItem(storageKey,JSON.stringify(next));settings=next;return {...settings};},
     applySettings(input){
       const previous={...settings};this.saveSettings(input);
@@ -194,9 +195,9 @@
         if(rollbackError){const failure=new Error((error?.message||'Setup history could not be saved.')+' Active physics was kept, but the previous saved setup could not be restored. Keep this page open, free browser storage space, and retry Apply before reloading.');failure.cause=error;failure.rollbackError=rollbackError;throw failure;}
         throw error;
       }
-      const finish=fast=>{if(fast===true){window.dispatchEvent(new CustomEvent('polytrack-lab-physics-applied'));return {fast:true};}location.reload();return {fast:false};};
+      const finish=fast=>{if(fast===true){window.dispatchEvent(new CustomEvent('polytrack-lab-physics-applied'));return {fast:true};}this.queueCurrentRunRestart?.();location.reload();return {fast:false};};
       const fallback=error=>{console.warn('Physics restart will use a full reload:',error);return finish(false);};
-      try{if(!this.getActiveCourse?.()&&document.body?.dataset?.labScene==='home'){const result=this.restartPhysics?.();if(result?.then)return result.then(finish).catch(fallback);if(result===true)return finish(true);}}catch(error){return fallback(error);}
+      try{if(!this.getActiveCourse?.()&&['home','game'].includes(document.body?.dataset?.labScene)){const result=this.restartPhysics?.();if(result?.then)return result.then(finish).catch(fallback);if(result===true)return finish(true);}}catch(error){return fallback(error);}
       location.reload();return {fast:false};
     }
   };

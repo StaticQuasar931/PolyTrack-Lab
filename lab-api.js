@@ -64,9 +64,9 @@
     const presetName = presetId !== null ? presetNames[presetId] : values ? 'Custom' : 'Unknown legacy setup';
     return { metadataVersion: 2, physicsKey: key, physicsValues: values ? { ...values } : null,
       presetId, presetName, setupName: typeof identity?.name === 'string' ? identity.name : presetName,
-      setupLabel: (typeof identity?.label === 'string' ? identity.label : presetId !== null ? `${presetId} · ${presetName}` : presetName)+(String(key).includes('~course:')?' · Course rules':''),
+      setupLabel: (typeof identity?.label === 'string' ? identity.label : presetId !== null ? `${presetId} · ${presetName}` : presetName)+(String(key).includes('~course:')?' · Course rules':'')+(String(key).includes('~tas')?' · TAS practice':''),
       physicsLabel: presetName, setupHistoryId,
-      replayAvailable: !!values && !String(key).includes('~course:') && values.boost === 0 && values.handbrake === 0 && values.jump === 0 };
+      replayAvailable: !!values && !String(key).includes('~course:') && !String(key).includes('~tas') && values.boost === 0 && values.handbrake === 0 && values.jump === 0 };
   }
   lab.getCurrentSetupDescriptor = () => {
     const key = profileKey();
@@ -75,6 +75,7 @@
     try { history = lab.getActiveSetupHistoryEntry?.(); } catch {}
     return { ...setupDescriptor(key, values, typeof history?.id === 'string' ? history.id : null),
       ...(lab.getActiveCourse?.()?{courseRules:Object.fromEntries(['name','author','notes','physics','checkpoints','objects'].map(key=>[key,lab.getActiveCourse()[key]]))}:{}),
+      ...(lab.getPracticeRunInfo?.()?{practice:lab.getPracticeRunInfo()}:{}),
       setupSaveNumber: Number.isSafeInteger(history?.saveNumber) ? history.saveNumber : null,
       saveNumber: Number.isSafeInteger(history?.saveNumber) ? history.saveNumber : null };
   };
@@ -90,7 +91,7 @@
     const values = normalizedPhysics(record.physicsValues, true) || decodeLegacyPhysics(key);
     const descriptor = setupDescriptor(key, values, typeof record.setupHistoryId === 'string' ? record.setupHistoryId : null);
     const saveNumber = Number.isSafeInteger(record.setupSaveNumber ?? record.saveNumber) ? record.setupSaveNumber ?? record.saveNumber : null;
-    return { ...descriptor, setupSaveNumber: saveNumber, saveNumber, ...(record.courseRules?{courseRules:record.courseRules}:{}),
+    return { ...descriptor, setupSaveNumber: saveNumber, saveNumber, ...(record.courseRules?{courseRules:record.courseRules}:{}),...(record.practice?{practice:record.practice}:{}),
       setupName: typeof record.setupName === 'string' ? record.setupName : descriptor.setupName,
       setupLabel: typeof record.setupLabel === 'string' ? record.setupLabel : descriptor.setupLabel };
   }
@@ -139,7 +140,7 @@
       const previous = read(RUN_HISTORY_KEY, []), history = Array.isArray(previous) ? previous : [];
       history.unshift({ runId: record.runId, recordId: record.id, trackId: record.trackId, name: record.name,nickname:record.nickname,
         timeMs: record.frames, date: record.date, physicsKey: record.physicsKey, physicsValues: record.physicsValues,
-        presetId: record.presetId, presetName: record.presetName, setupLabel: record.setupLabel,...(record.courseRules?{courseRules:record.courseRules}:{}),
+        presetId: record.presetId, presetName: record.presetName, setupLabel: record.setupLabel,...(record.courseRules?{courseRules:record.courseRules}:{}),...(record.practice?{practice:record.practice}:{}),
         setupHistoryId: record.setupHistoryId, setupSaveNumber: record.setupSaveNumber, saveNumber: record.saveNumber, isPersonalBest,
         isSetupBest: record.isSetupBest, captureSource: record.captureSource, verification: 'local',
         replayAvailable: record.replayAvailable,
@@ -256,6 +257,7 @@
   const pendingFinishCaptures = new Map();
   const finishCaptureKey = (trackId, user) => JSON.stringify([profileKey(), trackId, user]);
   lab.captureRun = input => {
+    if(lab.physicsRestarting)return null;
     const profile = runtime?.getCurrentProfile?.();
     const args = { user: profile?.token || 'local', userHash: profile?.tokenHash || null,
       nickname: profile?.nickname || 'Local player', countryCode: profile?.countryCode || null,
@@ -270,7 +272,7 @@
     const originalGetRecordTime = RecordClass.prototype.getRecordTime;
     RecordClass.prototype.getRecord = function() {
       if (lab.replayEnabled?.() === false) return null;
-      return originalGetRecord.apply(this, arguments);
+      const record=originalGetRecord.apply(this, arguments);if(record?.recording&&!record.recording.labPhysicsValues)lab.tagRecording(record.recording);return record;
     };
     RecordClass.prototype.getRecordTime = function() {
       if (lab.replayEnabled?.() === false) return originalGetRecord.apply(this, arguments)?.time ?? null;
@@ -293,6 +295,9 @@
   lab.attachRuntime = value => { runtime = value; window.dispatchEvent(new CustomEvent('polytrack-lab-runtime-ready')); };
   lab.ensureGhostsVisible=()=>runtime?.ensureGhostsVisible?.();
   lab.restartPhysics=()=>runtime?.restartPhysics?.()??false;
+  lab.canRestartCurrentRun=()=>runtime?.canRestartCurrentRun?.()===true;
+  lab.queueCurrentRunRestart=()=>runtime?.queueCurrentRunRestart?.();
+  lab.tagRecording=(recording,values=lab.getSettings(),key=profileKey(),unsupported=lab.replayEnabled?.()===false)=>{if(!recording)return recording;recording.labReplayUnsupported=unsupported;recording.labPhysicsMode=key==='stock'?'stock':'custom';recording.labPhysicsValues=normalizedPhysics(values,true);return recording;};
   lab.renderCarThumbnail=(style,values=lab.getDefaults())=>{if(!types||!runtime?.renderCarThumbnail)return Promise.resolve('');return runtime.renderCarThumbnail(typeof style==='string'?types.CarStyle.deserializeSafe(style):style,normalizedPhysics(values,true)||lab.getDefaults());};
   lab.renderVehiclePreview=values=>{if(!types||!runtime?.renderCarThumbnail)return Promise.resolve('');const normalized=normalizedPhysics(values,true);if(!normalized)throw Error('Enter valid dimensions to preview the car.');return runtime.renderCarThumbnail(runtime.getCurrentProfile?.()?.carStyle||types.CarStyle.default(),normalized);};
   lab.getLocalCarStyle=record=>findRawLocalRun(record.runId,record.trackId,record.physicsKey)?.record?.carStyle||null;
@@ -487,7 +492,7 @@
       if (lab.replayEnabled?.() === false) return null;
       const record = scores().find(entry => entry.id === id);
       if (!record || !record.recording) return null;
-      return { recording: types.Recording.deserialize(record.recording), time: new types.Frames(record.frames),
+      return { recording: lab.tagRecording(types.Recording.deserialize(record.recording),descriptorForRecord(record,profileKey()).physicsValues,profileKey(),false), time: new types.Frames(record.frames),
         verifiedState: 0, carStyle: record.carStyle ? types.CarStyle.deserializeSafe(record.carStyle) : types.CarStyle.default() };
     });
     proto.submitUserProfile = async () => {};

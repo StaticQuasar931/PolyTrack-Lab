@@ -2,7 +2,8 @@
 (() => {
   'use strict';
   const lab=window.PolyTrackLab,ui=document.getElementById('ui');
-  lab.onPanelOpen=()=>window.dispatchEvent(new Event('blur'));
+  lab.onPanelOpen=()=>{lab.setPracticePanelOpen?.(true);window.dispatchEvent(new Event('blur'));};
+  lab.onPanelClose=()=>lab.setPracticePanelOpen?.(false);
   let queued=false,homeButtonSpawned=false,trackStarting=false,bindingSignature='',runLabel='';
   lab.markTrackStarting=()=>{trackStarting=true;};
   const movementCodes=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight']),heldMovement=new Map();
@@ -83,7 +84,7 @@
     }
     for(const note of ui.querySelectorAll('.track-info-ui .no-opponents'))text(note,lab.replayEnabled?.()===false?'Times and setups save locally. Extra control runs do not have replay playback.':'Click a saved time for its physics and replay actions.');
     const hint=document.getElementById('lab-mechanics-hint');
-    if(hint){const config=lab.getSettings();const keys=[];if(!race)runLabel='';if(race&&!runLabel){const identity=lab.getSetupIdentity(config),save=lab.getSetupHistory()[0];runLabel=identity.label+(lab.getActiveCourse?.()?" · Course rules":"")+(save?.saveNumber?' · Save #'+save.saveNumber:'');}for(const [action,label] of [['boost','Boost'],['handbrake','Slide'],['jump','Jump']])if(config[action]>0)keys.push((lab.isMechanicBindingEnabled?.(action)===false?'Choose a free key':lab.getBindingLabel(action))+' '+label);if(config.airJumps>0)keys.push(config.airJumps+" air jump"+(config.airJumps===1?"":"s"));text(hint,spectating?'Watching replay · Your physics setup is kept.':[runLabel,...keys].filter(Boolean).join(' · '));hint.hidden=!race;}
+    if(hint){const config=lab.getSettings();const keys=[];if(!race)runLabel='';if(race&&!runLabel){const identity=lab.getSetupIdentity(config),save=lab.getSetupHistory()[0];runLabel=identity.label+(lab.getActiveCourse?.()?" · Course rules":"")+(save?.saveNumber?' · Save #'+save.saveNumber:'')+(lab.getPracticeState?.().enabled?' · TAS practice':'');}for(const [action,label] of [['boost','Boost'],['handbrake','Slide'],['jump','Jump']])if(config[action]>0)keys.push((lab.isMechanicBindingEnabled?.(action)===false?'Choose a free key':lab.getBindingLabel(action))+' '+label);if(config.airJumps>0)keys.push(config.airJumps+" air jump"+(config.airJumps===1?"":"s"));text(hint,spectating?'Watching replay · Your physics setup is kept.':[runLabel,...keys].filter(Boolean).join(' · '));hint.hidden=!race;}
   }
   function ensureRunway(menu){
     const wrapper=menu.querySelector('.track-selection-ui .tracks-container.no-group-containers > .wrapper');if(!wrapper)return;

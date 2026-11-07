@@ -28,6 +28,13 @@ const labPlayerCars=new Set();
 const labPlayerState=new Map();
 let labNativeInit=null;
 const labReplayGroups=new Map(),labReplayCars=new Map();
+let labPracticeSeen=false,labPracticeState={rate:1,paused:false,step:0};
+function labPracticePacket(value){
+  if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).some(key=>!['rate','paused','step','inputs'].includes(key))||![.25,.5,1,2,4].includes(value.rate)||typeof value.paused!=='boolean'||![0,1,10,100].includes(value.step??0)||(value.step??0)>0&&!value.paused)throw new Error('Choose a valid practice rate, pause state, and a paused 1, 10, or 100 ms step.');
+  const packet={rate:value.rate,paused:value.paused,step:value.step??0};
+  if(Object.prototype.hasOwnProperty.call(value,'inputs')){const inputs=value.inputs;if(inputs!==null&&(!inputs||typeof inputs!=='object'||Array.isArray(inputs)||Object.keys(inputs).length!==4||['up','right','down','left'].some(key=>typeof inputs[key]!=='boolean')))throw new Error('Practice inputs must contain four driving switches, or null.');packet.inputs=inputs===null?null:{up:inputs.up,right:inputs.right,down:inputs.down,left:inputs.left};}
+  return packet;
+}
 function labReplayValues(input){
   if(!input||typeof input!=='object'||Array.isArray(input))throw new Error('Saved replay physics are missing.');
   const next={...labDefaults};
@@ -51,6 +58,7 @@ function labReplayFailure(group,error,ids=group?[...group.ids]:[]){
 function labInitializeReplayGroup(group){
   if(group.initialized||!labNativeInit)return;
   group.worker.postMessage({...labNativeInit});group.initialized=true;
+  if(labPracticeSeen)group.worker.postMessage({labPractice:{...labPracticeState}});
   for(const message of group.pending)group.worker.postMessage(message);group.pending.length=0;
 }
 function labReplayGroup(values){
@@ -59,11 +67,12 @@ function labReplayGroup(values){
   if(labReplayGroups.size>=10)throw new Error('Choose up to 10 different replay setups at once.');
   if(typeof self.Worker!=='function')throw new Error('This browser cannot isolate recorded replay physics.');
   const url=new URL(stock?'simulation_worker.bundle.js':'lab-physics-worker.js',self.location.href);
-  if(!stock){url.searchParams.set('lab','1.7.0');url.hash=encodeURIComponent(JSON.stringify(values));}
+  url.searchParams.set('lab','1.8.0');if(!stock)url.hash=encodeURIComponent(JSON.stringify(values));
   const worker=new self.Worker(url.href),group={key,worker,ids:new Set(),pending:[],initialized:false};labReplayGroups.set(key,group);
   worker.addEventListener('message',event=>{
     if(labReplayGroups.get(key)!==group)return;const data=event.data;
     if(data?.labReplayError){labReplayFailure(group,data.message);return;}
+    if(data?.labPracticeError){self.postMessage(data);return;}
     if(data?.messageType===10&&Array.isArray(data.carStateBuffers)){
       const buffers=data.carStateBuffers.filter(buffer=>buffer?.byteLength>=4&&group.ids.has(new DataView(buffer).getUint32(0,true)));
       if(buffers.length)self.postMessage({messageType:10,carStateBuffers:buffers},buffers);return;
@@ -101,6 +110,14 @@ function labRouteReplayMessage(message,event){
   return true;
 }
 self.addEventListener('message',event=>{
+  if(event.data&&Object.prototype.hasOwnProperty.call(event.data,'labPractice')){
+    let packet;try{packet=labPracticePacket(event.data.labPractice);}catch(error){event.stopImmediatePropagation();self.postMessage?.({labPracticeError:true,message:error.message});return;}
+    const ghostPacket={rate:packet.rate,paused:packet.paused,step:packet.step};labPracticeSeen=true;labPracticeState={...ghostPacket,step:0};
+    for(const group of [...labReplayGroups.values()])try{const message={labPractice:{...ghostPacket}};if(group.initialized)group.worker.postMessage(message);else group.pending.push(message);}catch(error){labReplayFailure(group,error);}
+    // The native scheduler receives the same event after this listener. Inputs
+    // remain only on the player's engine, never on a recorded opponent.
+    return;
+  }
   if(event.data?.labCourseSettings){
     event.stopImmediatePropagation();const values=event.data.labCourseSettings;
     const invalid=!labDynamicCourse||!values||typeof values!=='object'||Array.isArray(values)||Object.entries(values).some(([key,value])=>!labCourseBounds[key]||typeof value!=='number'||!Number.isFinite(value)||value<labCourseBounds[key][0]||value>labCourseBounds[key][1]||['airJumps','boostAuto','airJumpUnlimited'].includes(key)&&!Number.isInteger(value)||labGeometryBounds[key]&&value!==labInitialGeometry[key])||values.downforce!==undefined&&values.downforce!==labInitialDownforce;
@@ -235,7 +252,7 @@ function labTuneStep(memory,car,settings,boost,afterStep=false,actions={}){
   if(!afterStep&&settings.coasting>0&&!data.getUint32(4,true)&&!data.getUint32(8,true)&&[0,1,2,3].some(index=>data.getUint8(wheels+284*index+84))){const factor=Math.exp(-settings.coasting*0.001);for(const offset of [312,316,320])data.setFloat32(body+offset,data.getFloat32(body+offset,true)*factor,true);}
   if(settings.maxSpeed>0){const x=data.getFloat32(body+312,true),y=data.getFloat32(body+316,true),z=data.getFloat32(body+320,true),speed=Math.hypot(x,y,z),cap=settings.maxSpeed/3.6;if(speed>cap){const scale=cap/speed;data.setFloat32(body+312,x*scale,true);data.setFloat32(body+316,y*scale,true);data.setFloat32(body+320,z*scale,true);if(afterStep)data.setFloat32(vehicle+112,(data.getFloat32(vehicle+112,true)<0?-1:1)*settings.maxSpeed,true);}}
 }
-labImportScripts('simulation_worker.bundle.js?v=1.7.0');
+labImportScripts('simulation_worker.bundle.js?v=1.8.0');
 
 
 

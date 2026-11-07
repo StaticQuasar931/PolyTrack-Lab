@@ -145,7 +145,7 @@
       const changes = fields().filter(f => draft[f.key] !== current[f.key]).length;
       const stock = fields().every(f => current[f.key] === original[f.key]);
       const identity=lab().getSetupIdentity?.(current),save=lab().getSetupHistory?.()[0];
-      activeBadge.textContent = `${identity?.label||'Original'} · ${stock?'unchanged':'active'}${save?.saveNumber?' · Save #'+save.saveNumber:''}`; activeBadge.classList.toggle('ptlab-custom-active',!stock);
+      activeBadge.textContent = `${identity?.label||'Original'} · ${stock?'unchanged':'active'}${save?.saveNumber?' · Save #'+save.saveNumber:''}${lab().getPracticeState?.().enabled?' · TAS practice':''}`; activeBadge.classList.toggle('ptlab-custom-active',!stock);
       changeSummary.textContent = changes ? `${changes} unsaved ${changes === 1 ? 'change' : 'changes'}` : 'Draft matches active physics';
       changeSummary.classList.toggle('ptlab-has-changes',changes > 0);
       apply.disabled = applying || !changes || !fields().length; undo.disabled = applying || !changes;
@@ -258,10 +258,11 @@
         if (typeof lab().applySettings !== 'function') throw Error('Physics is still loading. Please try again.');
         const result=await lab().applySettings({...draft}); draft = {...active()}; refresh(); if(result?.fast)dialog.close();else say('Physics saved locally. Restarting…');
       } catch(error) {say(error?.message || 'Settings could not be saved. Active physics was kept.',true);}
-      finally {applying = false; apply.textContent = 'Apply physics'; updateState();}
+      finally {applying = false; apply.textContent = document.body.dataset.labScene==='game'?'Apply & restart run':'Apply physics'; updateState();}
     }
     function open() {
       if (dialog.open) return; returnFocus = document.activeElement; draft = {...defaults(),...active()}; selectedPreset = null;
+      apply.textContent=document.body.dataset.labScene==='game'?'Apply & restart run':'Apply physics';
       try{rangeMode=localStorage.getItem('polytrack-lab.range-mode.v1')||'normal';}catch{rangeMode='normal';}if(!['normal','extended','sandbox'].includes(rangeMode))rangeMode='normal';rangeSelect.value=rangeMode;ensureRange();
       renderPresets(); renderFields(); refresh(); renderSaved();renderHistory();advanced.open=false;vehicle.open=false;saved.open=false;history.open=false;
       say(lab().storageError || lab().historyStorageError || lockStorageError || '',!!(lab().storageError || lab().historyStorageError || lockStorageError));

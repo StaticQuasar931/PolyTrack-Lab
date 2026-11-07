@@ -26,7 +26,7 @@ function environment(storage=new MemoryStorage()) {
   lab.attachRuntime({getProfile:()=>profile,getCurrentProfile:()=>profile,getTrackName:()=> 'Fixture course',
     parseTrack:()=>({trackMetadata:{name:'Fixture course'},trackData:{getId:()=>trackId}}),
     saveTrack:()=>{saved++;return true;},playTrack:()=>{played++;},watchTrack:()=>{watched++;},raceTrack:()=>{raced++;}});
-  return {lab,api:new Api(),profile,storage,events,stats:()=>({reloads,played,watched,raced,saved})};
+  return {lab,context,api:new Api(),profile,storage,events,stats:()=>({reloads,played,watched,raced,saved})};
 }
 const finish=(lab,timeMs,recording=new Recording(),carStyle=null)=>lab.captureRun({trackId,frames:new Frames(timeMs),recording,...(carStyle?{carStyle}:{})});
 test('one experiment per physics setup across profiles retains normalized values, stable preset IDs and save IDs',()=>{
@@ -102,4 +102,20 @@ test('runtime bridge validates course identity and keeps public ghosts Original 
   lab.saveSettings({...lab.presets.find(preset=>preset.id==='arcade').values,carScale:.5,wheelRadius:1.7});const active=JSON.stringify(lab.getSettings());lab.watchTrackCode('PolyTrackFixture',[replay],trackId);lab.raceTrackCode('PolyTrackFixture',[replay],trackId);
   assert.equal(stats().watched,2);assert.equal(stats().raced,2);assert.equal(stats().reloads,0);assert.equal(JSON.stringify(lab.getSettings()),active);assert.equal(replay.recording.labPhysicsMode,'stock');assert.equal(replay.recording.labPhysicsValues.acceleration,1);assert.equal(replay.recording.labPhysicsValues.carScale,1);
   assert.throws(()=>lab.decodePublicReplay({status:'missing',recording:'recording',carStyle:'style',nickname:'Public racer',frames:1234}),/unavailable/);
+});
+
+
+test('native PB recordings retain their own physics after a different setup is applied',()=>{
+  const {lab}=environment();lab.saveSettings(lab.presets.find(p=>p.id==='arcade').values);
+  const retained={recording:new Recording('recording-arcade'),time:new Frames(1000)};
+  class Records{getRecord(){return retained;}getRecordTime(){return retained.time;}async setRecord(){}}
+  lab.installRecords(Records);const records=new Records();records.getRecord();assert.equal(retained.recording.labPhysicsValues.acceleration,1.5);assert.equal(retained.recording.labPhysicsMode,'custom');
+  lab.saveSettings({...lab.getDefaults(),carScale:2});records.getRecord();assert.equal(retained.recording.labPhysicsValues.acceleration,1.5);assert.equal(retained.recording.labPhysicsValues.carScale,1,'A retained native PB never takes the new player dimensions');
+  lab.saveSettings(lab.presets.find(p=>p.id==='stunt').values);const own=lab.tagRecording(new Recording());assert.equal(own.labReplayUnsupported,true);const publicReplay=lab.decodePublicReplay({status:'available',recording:'recording',carStyle:'style',nickname:'Public racer',frames:1234});assert.notEqual(publicReplay.recording.labReplayUnsupported,true);assert.equal(publicReplay.recording.labPhysicsValues.jump,0);
+});
+test('TAS practice PBs and bounded control notes remain separate from normal PBs',async()=>{
+  const {lab,context}=environment();context.sessionStorage=new MemoryStorage();context.queueMicrotask=queueMicrotask;context.document.body.dataset.labScene='game';
+  vm.runInContext(fs.readFileSync(new URL('../lab-practice.js',import.meta.url),'utf8'),context);lab.canRestartCurrentRun=()=>true;lab.restartPhysics=async()=>true;
+  await lab.setPracticeMode(true);lab.setPracticeRate(.25);lab.pausePractice(true);finish(lab,1000);const practice=lab.getTrackExperiments(trackId)[0];assert.match(practice.setupLabel,/TAS practice/);assert.equal(practice.replayAvailable,false);assert.equal(practice.practice.changes.length,2);assert.equal(lab.getRunHistory()[0].practice.changes.length,2);
+  await lab.setPracticeMode(false);finish(lab,2000);assert.equal(lab.getTrackExperiments(trackId).length,2);assert.equal(lab.getPersonalBest(trackId),2000);assert.equal(lab.getPhysicsKey(),'stock');
 });

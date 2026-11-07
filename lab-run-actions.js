@@ -14,8 +14,9 @@
     open(`${time(record.timeMs)} · ${record.setupLabel||record.presetName}`);
     content.append(make('p','lab-run-meta',`${record.nickname || 'Anonymous'} (you) · ${record.saveNumber?'Save #'+record.saveNumber:'Earlier save'} · ${new Date(record.date).toLocaleString(undefined,{dateStyle:'short',timeStyle:'medium'})}`));
     details(record.physicsValues);
+    if(record.practice)content.append(make("p","lab-run-meta","TAS practice: assisted pacing and steps. Time and settings are saved separately from normal runs; native replay export is unavailable."));
     if(record.courseRules)content.append(make("p","lab-run-meta","Saved course rules: "+record.courseRules.checkpoints.length+" physics sections and "+record.courseRules.objects.length+" Lab objects. Restoring this run restores those rules too."));
-    if(record.physicsValues)button('Use setup & play',()=>restart(record,'play'));
+    if(record.physicsValues)button(record.practice?'Use physics & play':'Use setup & play',()=>restart(record,'play'));
     if(record.replayAvailable)button('Watch replay',async()=>{if(lab.trackActions?.trackId!==record.trackId)throw Error('Open this track before watching its replay.');const replay=lab.getLocalReplay(record);if(!replay)throw Error('This recording is unavailable.');lab.ensureGhostsVisible?.();dialog.close();lab.trackActions.watch([replay]);});
     else content.append(make('p','lab-run-meta',record.physicsValues&&['boost','handbrake','jump'].some(key=>record.physicsValues[key]>0)?'Time and setup saved. Extra control inputs cannot be replayed.':'Time and setup saved. This older run has no retained replay.'));
     if(record.replayAvailable)button('Race this ghost',async()=>{if(lab.trackActions?.trackId!==record.trackId)throw Error('Open this track before racing its ghost.');const replay=lab.getLocalReplay(record);if(!replay)throw Error('This recording is unavailable.');lab.ensureGhostsVisible?.();dialog.close();lab.markTrackStarting?.();lab.trackActions.race([replay]);});

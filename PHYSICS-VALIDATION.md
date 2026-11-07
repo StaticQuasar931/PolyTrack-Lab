@@ -66,4 +66,11 @@ The expanded finite tuning ceilings were exercised together for 10,000 native st
 
 ## Independent replay physics
 
-Public ghosts run in a nested untouched native worker initialized with the original chassis hull and downforce. Local recordings carry their saved physics into grouped isolated workers. Each visual car and camera uses that recording's dimensions. Player action keys and checkpoint/zone updates are never forwarded into replay engines. Tests cover message routing, transferable state buffers, bounded group counts, cleanup, nonfatal failures, and 3,000 byte-exact Original native steps alongside a changing custom player. Watching or racing does not write or apply settings.
+Public ghosts run the unmodified Bullet solver in an isolated native worker initialized with the original chassis hull and downforce. Local recordings carry their saved physics into grouped isolated workers. Each visual car and camera uses that recording's dimensions. Player action keys and checkpoint/zone updates are never forwarded into replay engines. Tests cover message routing, transferable state buffers, bounded group counts, cleanup, nonfatal failures, and 3,000 byte-exact Original native steps alongside a changing custom player. Watching or racing does not write or apply settings.
+
+
+## Practice scheduling
+
+The solver still advances fixed 1 ms steps. Practice changes realtime scheduling and native control-buffer timestamps, not engine constants or integration precision. Rate changes and pause/resume clear wall-clock debt. Paused step commands advance exactly 1/10/100 native ticks; held inputs affect controllable cars only. Recorded opponents receive matching pacing without player input overrides. Non-realtime replay engines continue following their requested simulation frame.
+
+Tests extract the production scheduler and input handlers, covering all five pacing rates, paused startup, repeated exact steps, no accumulated pause debt, keyboard release, held controls, child-worker forwarding and malformed commands. 3,000 production-scheduled paused steps match direct Original Bullet output byte for byte despite long wall-clock pauses. UI-state tests cover assisted-key isolation, storage rollback, bounded notes and safe course exclusions. Native PB recordings keep immutable settings tags; unsupported self recordings are filtered separately from playable public ghosts.

@@ -11,7 +11,7 @@
       label: `${count} saved`, description: `${count} saved public ${count === 1 ? 'result' : 'results'} on original physics` };
   }
   function comparison(snapshot, best, stock) {
-    if (!stock) return { kind: 'custom', text: 'Custom physics active. Your local times are not compared with this original-physics snapshot.' };
+    if (!stock) return { kind: 'custom', text: 'Custom physics or TAS practice active. Your local times are not compared with this Original reference.' };
     if (!snapshot?.available) return { kind: 'unavailable', text: 'A saved public snapshot is needed to compare your local best.' };
     if (!Number.isFinite(best) || best <= 0) return { kind: 'none', text: 'Finish this track with original physics to compare your local best with the saved results.' };
     const entries = snapshot.entries, count = entries.length, prefix = `Your local best ${time(best)}`;
