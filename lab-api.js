@@ -292,6 +292,7 @@
   };
   lab.attachRuntime = value => { runtime = value; window.dispatchEvent(new CustomEvent('polytrack-lab-runtime-ready')); };
   lab.ensureGhostsVisible=()=>runtime?.ensureGhostsVisible?.();
+  lab.restartPhysics=()=>runtime?.restartPhysics?.()??false;
   lab.renderCarThumbnail=(style,values=lab.getDefaults())=>{if(!types||!runtime?.renderCarThumbnail)return Promise.resolve('');return runtime.renderCarThumbnail(typeof style==='string'?types.CarStyle.deserializeSafe(style):style,normalizedPhysics(values,true)||lab.getDefaults());};
   lab.renderVehiclePreview=values=>{if(!types||!runtime?.renderCarThumbnail)return Promise.resolve('');const normalized=normalizedPhysics(values,true);if(!normalized)throw Error('Enter valid dimensions to preview the car.');return runtime.renderCarThumbnail(runtime.getCurrentProfile?.()?.carStyle||types.CarStyle.default(),normalized);};
   lab.getLocalCarStyle=record=>findRawLocalRun(record.runId,record.trackId,record.physicsKey)?.record?.carStyle||null;

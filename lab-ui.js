@@ -118,13 +118,13 @@
     window.PolyTrackLab.mountBindings?.(bindings,()=>{const next=lab().enableAllMechanics(draft);for(const key of ['boost','handbrake','jump','airJumps'])draft[key]=next[key];selectedPreset=null;refresh();say('Boost, slide and double jump enabled in the draft. Apply to play.');});
     const status = make('div','ptlab-status'); status.setAttribute('role','status'); status.setAttribute('aria-live','polite');
     const footer = make('footer','ptlab-footer'), stateCopy = make('div','ptlab-state-copy'), changeSummary = make('strong','ptlab-change-summary');
-    stateCopy.append(changeSummary,make('span','','Apply saves on this device and restarts the game.'));
+    stateCopy.append(changeSummary,make('span','','Saves on this device. Ready for your next run.'));
     const actions = make('div','ptlab-actions');
     const undo = btn('ptlab-text-button','Undo draft',() => {draft = {...active()}; selectedPreset = null;ensureRange(); refresh(); say('Draft restored to active physics. Your locks were kept.');});
     undo.title = 'Discard unsaved values and restore active physics. Keeps your locks.';
     const reset = btn('ptlab-secondary','Reset all',() => {draft = {...defaults()}; locks.clear(); selectedPreset = 'standard'; refresh(); say('Original values restored and every lock cleared. Apply to use these values.'); persistLocks();});
     reset.title = 'Restore all original values and clear every lock. Apply is still required.';
-    const apply = btn('ptlab-primary','Apply & restart game',applyDraft);
+    const apply = btn('ptlab-primary','Apply physics',applyDraft);
     actions.append(undo,reset,apply); footer.append(stateCopy,close,actions); shell.append(header,scroll,status,footer); dialog.append(shell); document.body.append(dialog);
     function say(message,error = false) {status.textContent = message; status.hidden=!message;status.classList.toggle('ptlab-error',error);}
     function persistLocks() {
@@ -256,9 +256,9 @@
       if (applying || !valid()) return; applying = true; updateState(); apply.textContent = 'Saving…';
       try {
         if (typeof lab().applySettings !== 'function') throw Error('Physics is still loading. Please try again.');
-        await lab().applySettings({...draft}); draft = {...active()}; refresh(); say('Physics saved locally. Restarting the game…');
+        const result=await lab().applySettings({...draft}); draft = {...active()}; refresh(); if(result?.fast)dialog.close();else say('Physics saved locally. Restarting…');
       } catch(error) {say(error?.message || 'Settings could not be saved. Active physics was kept.',true);}
-      finally {applying = false; apply.textContent = 'Apply & restart game'; updateState();}
+      finally {applying = false; apply.textContent = 'Apply physics'; updateState();}
     }
     function open() {
       if (dialog.open) return; returnFocus = document.activeElement; draft = {...defaults(),...active()}; selectedPreset = null;
