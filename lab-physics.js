@@ -139,7 +139,7 @@
   const NativeWorker=window.Worker;
   const workers=new Set();
   const courseWorkers=new Map();
-  let boostHeld=false,handbrakeHeld=false,jumpSequence=0,jumpStartPending=false;
+  let boostHeld=false,handbrakeHeld=false,jumpSequence=0,jumpStartPending=false;let wheelBoost=false,wheelSlide=false,wheelJump=false;
   const inGameScene=()=>{const scene=document.body?.dataset?.labScene;return scene===undefined||scene===''||scene==='game';};
   const consumeJumpStart=()=>{const pending=jumpStartPending;jumpStartPending=false;return pending&&settings.jump>0&&isMechanicBindingEnabled('jump')&&inGameScene();};
   window.Worker=class extends NativeWorker {
@@ -147,10 +147,10 @@
       const target=new URL(url,location.href);
       const physics=target.pathname.endsWith('/simulation_worker.bundle.js');
       const dynamicCourse=physics&&!!window.PolyTrackLab?.getActiveCourse?.();
-      if(physics){target.pathname=target.pathname.replace(/simulation_worker\.bundle\.js$/,'lab-physics-worker.js');target.searchParams.set('lab','1.9.0');target.hash=encodeURIComponent(JSON.stringify({...settings,...window.PolyTrackLab?.getWheelWorkerSettings?.(),...(dynamicCourse?{_dynamicCourse:true}:{})}));}
+      if(physics){target.pathname=target.pathname.replace(/simulation_worker\.bundle\.js$/,'lab-physics-worker.js');target.searchParams.set('lab','1.9.1');target.hash=encodeURIComponent(JSON.stringify({...settings,...window.PolyTrackLab?.getWheelWorkerSettings?.(),...(dynamicCourse?{_dynamicCourse:true}:{})}));}
       super(physics?target.href:url,options);
       this.labPhysicsURL=physics?target.href:null;this.labWorkerOptions=options;this.labReplacement=null;this.labInitMessage=null;
-      if(physics){workers.add(this);if(dynamicCourse)courseWorkers.set(this,{...settings});this.addEventListener?.('message',event=>{if(event.data?.labReplayError)window.dispatchEvent(new CustomEvent('polytrack-lab-replay-error',{detail:{message:event.data.message}}));});this.postMessage({labPhysics:true,boost:boostHeld,handbrake:handbrakeHeld,jumpSequence});}
+      if(physics){workers.add(this);if(dynamicCourse)courseWorkers.set(this,{...settings});this.addEventListener?.('message',event=>{if(event.data?.labReplayError)window.dispatchEvent(new CustomEvent('polytrack-lab-replay-error',{detail:{message:event.data.message}}));});this.postMessage({labPhysics:true,boost:boostHeld||wheelBoost,handbrake:handbrakeHeld||wheelSlide,jumpSequence});}
     }
     postMessage(message,...args){if(this.labPhysicsURL&&message?.messageType===0)this.labInitMessage=message;const result=this.labReplacement?this.labReplacement.postMessage(message,...args):super.postMessage(message,...args);if(this.labPhysicsURL&&message?.messageType===0){const practice=window.PolyTrackLab?.getPracticePacket?.();if(practice)this.postMessage({labPractice:practice});}return result;}
     restartPhysics(){
@@ -166,7 +166,7 @@
     }
     terminate(){try{this.postMessage({labDisposeReplays:true});}catch{}this.labReplacement?.terminate();workers.delete(this);courseWorkers.delete(this);super.terminate();}
   };
-  const rebuildPhysicsWorkers=()=>{if(window.PolyTrackLab?.getActiveCourse?.())throw Error('Course transitions require a complete restart.');if([...workers].some(worker=>!worker.labInitMessage))throw Error('Physics is still loading.');boostHeld=false;handbrakeHeld=false;jumpStartPending=false;return Promise.all([...workers].map(worker=>worker.restartPhysics()));};
+  const rebuildPhysicsWorkers=()=>{if(window.PolyTrackLab?.getActiveCourse?.())throw Error('Course transitions require a complete restart.');if([...workers].some(worker=>!worker.labInitMessage))throw Error('Physics is still loading.');boostHeld=false;handbrakeHeld=false;wheelBoost=false;wheelSlide=false;wheelJump=false;jumpStartPending=false;return Promise.all([...workers].map(worker=>worker.restartPhysics()));};
   const sendCourseSettings=input=>{
     if(!window.PolyTrackLab?.getActiveCourse?.())throw Error('Open a Lab course before changing its live physics.');
     if(!input||typeof input!=='object'||Array.isArray(input))throw Error('Invalid live course settings.');
@@ -176,14 +176,15 @@
     for(const worker of workers)worker.postMessage({labCourseSettings:next});
     return {...next};
   };
-  const sendActions=(cancelJump=false)=>{for(const worker of workers)worker.postMessage({labPhysics:true,boost:boostHeld,handbrake:handbrakeHeld,jumpSequence,cancelJump});};
-  onBindingsChanged=()=>{boostHeld=false;handbrakeHeld=false;jumpStartPending=false;sendActions(true);};
+  const sendActions=(cancelJump=false)=>{for(const worker of workers)worker.postMessage({labPhysics:true,boost:boostHeld||wheelBoost,handbrake:handbrakeHeld||wheelSlide,jumpSequence,cancelJump});};
+  onBindingsChanged=()=>{boostHeld=false;handbrakeHeld=false;wheelBoost=false;wheelSlide=false;wheelJump=false;jumpStartPending=false;sendActions(true);};
   document.addEventListener('keydown',event=>{if(!inGameScene()||event.repeat||event.ctrlKey||event.altKey||event.metaKey||!getAllowedBindingCodes().includes(event.code)||/^(INPUT|TEXTAREA|SELECT)$/.test(event.target?.tagName)||event.target?.isContentEditable)return;if(event.code===bindings.boost&&settings.boost>0)boostHeld=true;else if(event.code===bindings.handbrake&&settings.handbrake>0)handbrakeHeld=true;else if(event.code===bindings.jump&&settings.jump>0){jumpSequence++;jumpStartPending=true;}else return;sendActions();});
   document.addEventListener('keyup',event=>{if(event.code===bindings.boost)boostHeld=false;else if(event.code===bindings.handbrake)handbrakeHeld=false;else return;sendActions();});
-  window.addEventListener('blur',()=>{boostHeld=false;handbrakeHeld=false;jumpStartPending=false;sendActions(true);});
+  window.addEventListener('blur',()=>{boostHeld=false;handbrakeHeld=false;wheelBoost=false;wheelSlide=false;wheelJump=false;jumpStartPending=false;sendActions(true);});
   const sendPractice=practice=>{for(const worker of workers)worker.postMessage({labPractice:practice});};
+  const setWheelMechanics=(value={})=>{const allowed=inGameScene(),boost=allowed&&value.boost===true&&settings.boost>0,slide=allowed&&value.slide===true&&settings.handbrake>0,jump=allowed&&value.jump===true&&settings.jump>0;const changed=boost!==wheelBoost||slide!==wheelSlide||jump!==wheelJump;if(jump&&!wheelJump){jumpSequence++;jumpStartPending=true;}wheelBoost=boost;wheelSlide=slide;wheelJump=jump;if(changed)sendActions();};
   const sendWheel=wheel=>{for(const worker of workers)worker.postMessage({labWheel:wheel});};
-  window.PolyTrackLab={...(window.PolyTrackLab||{}),sendWheel,sendPractice,rebuildPhysicsWorkers,fields,presets,getSavedSetups,saveSetup,deleteSetup,randomizeSettings,consumeJumpStart,getBindings,setBindings,reconcileBindings,bindingNotice,isMechanicBindingEnabled,getBindingLabel,getAllowedBindingCodes,getSetupIdentity,describeSettings,enableAllMechanics,getSetupHistory,recordAppliedSetup,getActiveSetupHistoryEntry,sendCourseSettings,getSettings:()=>({...settings}),canReplay:replayEnabled,replayEnabled,getPhysicsKey:()=>fingerprint(settings),getDefaults:()=>normalize(null),
+  window.PolyTrackLab={...(window.PolyTrackLab||{}),setWheelMechanics,sendWheel,sendPractice,rebuildPhysicsWorkers,fields,presets,getSavedSetups,saveSetup,deleteSetup,randomizeSettings,consumeJumpStart,getBindings,setBindings,reconcileBindings,bindingNotice,isMechanicBindingEnabled,getBindingLabel,getAllowedBindingCodes,getSetupIdentity,describeSettings,enableAllMechanics,getSetupHistory,recordAppliedSetup,getActiveSetupHistoryEntry,sendCourseSettings,getSettings:()=>({...settings}),canReplay:replayEnabled,replayEnabled,getPhysicsKey:()=>fingerprint(settings),getDefaults:()=>normalize(null),
     saveSettings(input){const next=normalize(input);localStorage.setItem(storageKey,JSON.stringify(next));settings=next;return {...settings};},
     applySettings(input){
       const previous={...settings};this.saveSettings(input);

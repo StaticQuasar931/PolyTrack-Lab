@@ -81,7 +81,7 @@ function labReplayGroup(values){
   if(labReplayGroups.size>=10)throw new Error('Choose up to 10 different replay setups at once.');
   if(typeof self.Worker!=='function')throw new Error('This browser cannot isolate recorded replay physics.');
   const url=new URL(stock?'simulation_worker.bundle.js':'lab-physics-worker.js',self.location.href);
-  url.searchParams.set('lab','1.9.0');if(!stock)url.hash=encodeURIComponent(JSON.stringify(values));
+  url.searchParams.set('lab','1.9.1');if(!stock)url.hash=encodeURIComponent(JSON.stringify(values));
   const worker=new self.Worker(url.href),group={key,worker,ids:new Set(),pending:[],initialized:false};labReplayGroups.set(key,group);
   worker.addEventListener('message',event=>{
     if(labReplayGroups.get(key)!==group)return;const data=event.data;
@@ -294,7 +294,7 @@ function labTuneStep(memory,car,settings,boost,afterStep=false,actions={}){
   if(!afterStep&&settings.coasting>0&&(wheelInput?wheelInput.throttle===0&&wheelInput.brake===0:!data.getUint32(4,true)&&!data.getUint32(8,true))&&[0,1,2,3].some(index=>data.getUint8(wheels+284*index+84))){const factor=Math.exp(-settings.coasting*0.001);for(const offset of [312,316,320])data.setFloat32(body+offset,data.getFloat32(body+offset,true)*factor,true);}
   if(settings.maxSpeed>0){const x=data.getFloat32(body+312,true),y=data.getFloat32(body+316,true),z=data.getFloat32(body+320,true),speed=Math.hypot(x,y,z),cap=settings.maxSpeed/3.6;if(speed>cap){const scale=cap/speed;data.setFloat32(body+312,x*scale,true);data.setFloat32(body+316,y*scale,true);data.setFloat32(body+320,z*scale,true);if(afterStep)data.setFloat32(vehicle+112,(data.getFloat32(vehicle+112,true)<0?-1:1)*settings.maxSpeed,true);}}
 }
-labImportScripts('simulation_worker.bundle.js?v=1.9.0');
+labImportScripts('simulation_worker.bundle.js?v=1.9.1');
 
 
 
