@@ -1,43 +1,51 @@
 {
   "id": "lab-runway",
-  "name": "Lab Runway: Desert Circuit",
+  "name": "Lab Runway: Desert Skyway",
   "author": "PolyTrack Lab",
-  "description": "A 3 km desert test circuit with a 600 m acceleration straight, four broad braking turns, five ordered checkpoints and an optional ramp apron. Follow the arrows through the turns; the side ramps are optional.",
-  "trackId": "a43aa6d8ca1cb0366f40954ec42b4441fefdb4c01f761051bc11dd5d8591eec1",
+  "description": "Gray roads rise 60 m above the desert so every edge is clear. Follow the 3 km circuit through four broad turns and five checkpoints, or try the separate Boosts & Rings demo with visible Lab mechanics.",
+  "trackId": "dfcdc5ee1d27ece87ee65a36075439b3a7148d06b67fbcf6c352897e98d884b7",
   "trackPath": "lab-tracks/runway.track",
   "thumbnailUrl": "lab-tracks/runway.svg",
-  "revision": 3,
+  "revision": 4,
   "environment": "desert",
+  "elevationGrid": 12,
+  "elevationMeters": 60,
   "features": [
+    "Raised gray roads",
     "3 km test route",
-    "Four braking turns",
     "Five checkpoints",
-    "Side ramp apron"
+    "Boosts & Rings demo"
   ],
   "parts": 587,
   "routeWaypoints": [
     {
       "x": 0,
+      "y": 12,
       "z": 0
     },
     {
       "x": 0,
+      "y": 12,
       "z": -120
     },
     {
       "x": 120,
+      "y": 12,
       "z": -120
     },
     {
       "x": 120,
+      "y": 12,
       "z": -240
     },
     {
       "x": -40,
+      "y": 12,
       "z": -240
     },
     {
       "x": -40,
+      "y": 12,
       "z": -324
     }
   ],
@@ -45,28 +53,35 @@
     {
       "x": 0,
       "z": -80,
-      "rotation": 0
+      "rotation": 0,
+      "y": 12
     },
     {
       "x": 80,
       "z": -120,
-      "rotation": 3
+      "rotation": 3,
+      "y": 12
     },
     {
       "x": 120,
       "z": -200,
-      "rotation": 0
+      "rotation": 0,
+      "y": 12
     },
     {
       "x": 20,
       "z": -240,
-      "rotation": 1
+      "rotation": 1,
+      "y": 12
     },
     {
       "x": -40,
       "z": -300,
-      "rotation": 0
+      "rotation": 0,
+      "y": 12
     }
   ],
-  "routeLengthMeters": 3020
+  "routeLengthMeters": 3020,
+  "demoPath": "lab-tracks/runway-demo.json",
+  "demoTrackId": "82f859b7fde28e8b2fc55caceb3289adaac9432e0e3bdce8de39f6cd99da3650"
 }

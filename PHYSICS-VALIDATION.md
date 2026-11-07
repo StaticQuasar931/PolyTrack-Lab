@@ -6,11 +6,11 @@ Supported settings are acceleration, reverse power, braking, tire grip, steering
 
 Applying a profile saves it locally and reloads the game. New workers receive the saved profile. This avoids changing a physics profile partway through a run. Boost adds engine power while B is held and the player accelerates. It does not accelerate a stationary car without throttle. Boost releases on window blur.
 
-Boost, handbrake and jump apply only to player-controlled cars. The worker distinguishes those cars from recordings using their native creation messages. Native recordings do not encode the extra inputs, so profiles with any of these three mechanics enabled save local finish times but disable ghosts and replay playback. Setting all three back to zero restores replay support. N was chosen for handbrake because the original game's H key already toggles its interface.
+Boost, handbrake and jump apply only to player-controlled cars. The worker distinguishes those cars from recordings using their native creation messages. Native recordings do not encode the extra inputs, so runs with any of these three mechanics enabled save local finish times without a native recording. Compatible recordings from other setups remain watchable and raceable in isolated engines. Setting all three back to zero restores recording support for new runs. N was chosen for handbrake because the original game's H key already toggles its interface.
 
 Handbrake adds braking force only to the rear wheels and scales rear traction to 35% of its configured value while held. Jump adds the configured world-up velocity only on a fresh J press, with at least two wheel contacts and a 750-step cooldown. A car's first jump may wait up to its first 20 simulation ticks for initial wheel contacts. Later airborne presses are consumed without queuing a jump on landing. Cooldown counts simulation steps, so pausing does not spend it. Reset clears cooldown and pending jump input. Boost and handbrake release on window blur.
 
-Built-in presets are Standard, Arcade, Drift, Rocket, Gentle, Stunt park, Low gravity, and Random mix. They populate the same real settings; they do not add hidden physics changes. Low gravity uses a 0.25× gravity multiplier, 0.2× downforce and 1.1× acceleration. It remains replayable because it does not enable extra action keys. Named setups persist separately in local storage, with up to 30 names of at most 40 characters. Saving an existing name updates it. New mechanic defaults preserve previous profile score keys when the mechanics are off; gravity at 1× also preserves existing keys.
+Built-in presets are Original, Arcade, Drift, Rocket, Gentle, Stunt park, Low gravity, and Random mix. They populate the same real settings; they do not add hidden physics changes. Low gravity uses a 0.25× gravity multiplier, 0.2× downforce and 1.1× acceleration. It remains replayable because it does not enable extra action keys. Named setups persist separately in local storage, with up to 30 names of at most 40 characters. Saving an existing name updates it. New mechanic defaults preserve previous profile score keys when the mechanics are off; gravity at 1× also preserves existing keys.
 
 The default profile uses the original binary and skips the adapter entirely. Tests also compare the original engine with a hooked engine at default values, checking every byte of sampled 227-byte car states across 2,500 actual Bullet simulation steps. The results match exactly.
 
@@ -47,7 +47,7 @@ Settings are stored only in this browser's local storage for the site's origin. 
 
 ## Expanded Lab Runway
 
-Runway revision 3 uses 587 native parts in Desert. Its connected 3,020-meter route includes a 600-meter straight, four broad braking turns, five ordered checkpoints, four optional side ramps, and landing space. Turn arrows guide the route. The previous straight revision 2 remains a different native track if already saved.
+Runway revision 4 uses 587 native parts 60 meters above Desert, with gray surfaces for contrast. Its connected 3,020-meter route includes a 600-meter straight, four broad braking turns, five ordered checkpoints, four optional side ramps, and landing space. Turn arrows guide the route. The previous straight revision 2 remains a different native track if already saved.
 
 The current canonical ID is `a43aa6d8ca1cb0366f40954ec42b4441fefdb4c01f761051bc11dd5d8591eec1`. `node tests/runway.cjs` verifies the actual native parser, canonical hash, connected route, checkpoint order, ramp landings, and pixel-exact native preview. The separate community catalog is unchanged.
 
@@ -62,3 +62,8 @@ Vehicle sizing scales the native Init-message convex-hull vertices and center-of
 The native hull AABB doubles with a 2x scale. An inverted car with every wheel out of contact collides with the ground earlier when body height is doubled: chassis Y at 700 ms is 3.4449 m rather than 2.6488 m. Changing wheel radius from 0.5x to 2x changes the settled car origin from -0.0193 m to 0.4794 m. Combined body, wheel, spacing, wheelbase, and suspension settings repeat deterministically; minimum and maximum geometry combinations remain finite for 5,000 steps.
 
 The expanded finite tuning ceilings were exercised together for 10,000 native steps and repeated byte-identically. That fixture reached roughly 14,624 km/h and 11,196 m height. These are test outcomes, not promised performance on every course. Zero engine/grip/steering settings remain finite. Automatic boost with power 2 matches 3x acceleration, while manual boost off retains stock behavior. Unlimited air jumps still require separate presses and honor the chosen recharge. New default fields preserve earlier preset fingerprints and published version 1.4 Lab course rule identities.
+
+
+## Independent replay physics
+
+Public ghosts run in a nested untouched native worker initialized with the original chassis hull and downforce. Local recordings carry their saved physics into grouped isolated workers. Each visual car and camera uses that recording's dimensions. Player action keys and checkpoint/zone updates are never forwarded into replay engines. Tests cover message routing, transferable state buffers, bounded group counts, cleanup, nonfatal failures, and 3,000 byte-exact Original native steps alongside a changing custom player. Watching or racing does not write or apply settings.

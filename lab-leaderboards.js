@@ -79,7 +79,7 @@
       const note=ui.querySelector('.track-info-ui .opponents-container');if(!note)return;
       const nativeWatch=ui.querySelector('.track-info-ui .side-panel > .button.watch');
       if(nativeWatch){nativeWatch.dataset.labPublicSelection=String(state.active==='snapshot'&&selectedPublic.size>0);nativeWatch.disabled=!(state.active==='snapshot'&&selectedPublic.size)&&!(lab.getPersonalBest?.(state.trackId)>0&&lab.replayEnabled?.()!==false);}
-      if(state.active==='snapshot'&&selectedPublic.size){note.classList.remove('no-opponents');note.textContent=`${selectedPublic.size} public ghost${selectedPublic.size===1?'':'s'} selected. Play to race, or Watch to view their cars.`;}
+      if(state.active==='snapshot'&&selectedPublic.size){note.classList.remove('no-opponents');note.textContent=`${selectedPublic.size} Original ghost${selectedPublic.size===1?'':'s'} · You: ${lab.getSetupIdentity().label}. Play to race; Watch to spectate.`;}
       else {note.classList.add('no-opponents');note.textContent=state.active==='snapshot'?'Select public ghosts on the left, then Race selected.':'Click a saved time for its physics and replay actions.';}
     }
     const state = { trackId: null, snapshot: null, error: null, token: 0, active: 'local', load: null, render: null, refreshComparison: null };
@@ -146,7 +146,7 @@
       const date = new Date(snapshot.capturedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
       const note = make('div', 'lab-snapshot-summary');
       note.append(make('p', 'lab-board-total', `${snapshot.entries.length} saved results · ${snapshot.total.toLocaleString()} public results reported`));
-      note.append(make('p', 'lab-board-note', `Captured ${date}. ${snapshot.onlyVerified ? 'Verified public results.' : 'Public capture; includes unverified entries.'} Select up to 10 ghosts. Public ghosts use Original physics automatically. Right-click for details.`));
+      note.append(make('p', 'lab-board-note', `Captured ${date}. Select up to 10 ghosts. They use Original physics; your setup stays unchanged. Right-click for details.`));
       const compare = refreshComparison();
       const message = make('p', 'lab-board-comparison', compare.text); message.dataset.comparison = compare.kind; note.append(message); panel.append(note);
       if (!snapshot.entries.length) { panel.append(make('p', 'lab-board-empty', 'Kodub reported no public results for this track when this capture was made.')); return; }

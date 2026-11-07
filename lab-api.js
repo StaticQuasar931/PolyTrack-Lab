@@ -183,17 +183,18 @@
     lab.applySettings(values); return { ...values };
   };
   lab.getLocalReplay = record => {
-    if (!record || record.physicsKey !== profileKey()) throw Error('Restore this run’s physics setup first, then open Watch after the game reloads');
+    if (!record || typeof record.physicsKey !== 'string') throw Error('Choose a saved run with physics settings');
     const fallback = !record.runId && scores(record.physicsKey).find(candidate => candidate.id === (record.recordId ?? record.id) && candidate.trackId === record.trackId);
     const runId = record.runId || fallback?.runId || `legacy:${encodeURIComponent(record.physicsKey)}:${record.recordId ?? record.id}`;
     const saved = findRawLocalRun(runId, record.trackId, record.physicsKey)?.record;
     if (!saved) throw Error('This saved run is no longer available');
     const descriptor = descriptorForRecord(saved, record.physicsKey);
-    if (!descriptor.replayAvailable || lab.replayEnabled?.() === false) throw Error('This run uses extra controls that cannot be replayed');
+    if (!descriptor.replayAvailable) throw Error('This run uses extra controls that cannot be replayed');
     if (!saved.recording) throw Error('This replay has aged out of the bounded local archive. Its time and settings remain saved');
     if (!types) throw Error('The game is still starting');
     const recording = types.Recording.deserialize(saved.recording);
     if (!recording) throw Error('This local recording could not be read');
+    recording.labPhysicsMode=record.physicsKey==='stock'?'stock':'custom';recording.labPhysicsValues={...descriptor.physicsValues};
     return { recording, carStyle: saved.carStyle ? types.CarStyle.deserializeSafe(saved.carStyle) : types.CarStyle.default(),
       nickname: `${saved.nickname || 'Anonymous'} (you) · ${descriptor.setupLabel}`, time: new types.Frames(saved.frames), isSelf: true, physicsKey: record.physicsKey };
   };
@@ -205,6 +206,7 @@
       typeof row.nickname !== 'string' || row.nickname.length > 200) throw Error('This saved public replay is unavailable or invalid');
     const recording = types.Recording.deserialize(row.recording);
     if (!recording) throw Error('This saved public replay could not be read');
+    recording.labPhysicsMode='stock';recording.labPhysicsValues=normalizedPhysics({});
     return { recording, time: new types.Frames(row.frames), carStyle: types.CarStyle.deserializeSafe(row.carStyle),
       nickname: row.nickname, isSelf: false, physicsKey: 'stock' };
   };
@@ -318,7 +320,6 @@
   lab.watchTrackCode = (code, entries, expectedTrackId = null) => {
     if (!Array.isArray(entries) || !entries.length || entries.length > 10 || entries.some(entry => !entry?.recording || !entry.carStyle ||
       !Number.isSafeInteger(entry.time?.numberOfFrames) || entry.time.numberOfFrames <= 0 || typeof entry.nickname !== 'string')) throw Error('Choose a valid replay to watch');
-    if (entries.some(entry => entry.physicsKey && entry.physicsKey !== profileKey() || entry.isSelf === false && profileKey() !== 'stock')) throw Error('Restore the replay’s physics setup before watching');
     if (!runtime?.watchTrack) throw Error('The replay viewer is still starting');
     const parsed = parseTrackCode(code, expectedTrackId);
     runtime.watchTrack(parsed.trackMetadata, parsed.trackData, entries); return parsed;
@@ -326,7 +327,6 @@
   lab.raceTrackCode = (code, entries, expectedTrackId = null) => {
     if (!Array.isArray(entries) || !entries.length || entries.length > 10 || entries.some(entry => !entry?.recording || !entry.carStyle ||
       !Number.isSafeInteger(entry.time?.numberOfFrames) || entry.time.numberOfFrames <= 0 || typeof entry.nickname !== 'string')) throw Error('Choose up to 10 valid ghosts');
-    if (entries.some(entry => entry.physicsKey && entry.physicsKey !== profileKey() || entry.isSelf === false && profileKey() !== 'stock')) throw Error('Restore the ghosts’ physics setup before racing');
     if (!runtime?.raceTrack) throw Error('The race is still starting');
     const parsed=parseTrackCode(code,expectedTrackId);runtime.raceTrack(parsed.trackMetadata,parsed.trackData,entries);return parsed;
   };

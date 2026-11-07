@@ -147,11 +147,11 @@
       const target=new URL(url,location.href);
       const physics=target.pathname.endsWith('/simulation_worker.bundle.js');
       const dynamicCourse=physics&&!!window.PolyTrackLab?.getActiveCourse?.();
-      if(physics){target.pathname=target.pathname.replace(/simulation_worker\.bundle\.js$/,'lab-physics-worker.js');target.searchParams.set('lab','1.5.0');target.hash=encodeURIComponent(JSON.stringify({...settings,...(dynamicCourse?{_dynamicCourse:true}:{})}));}
+      if(physics){target.pathname=target.pathname.replace(/simulation_worker\.bundle\.js$/,'lab-physics-worker.js');target.searchParams.set('lab','1.6.0');target.hash=encodeURIComponent(JSON.stringify({...settings,...(dynamicCourse?{_dynamicCourse:true}:{})}));}
       super(physics?target.href:url,options);
-      if(physics){workers.add(this);if(dynamicCourse)courseWorkers.set(this,{...settings});this.postMessage({labPhysics:true,boost:boostHeld,handbrake:handbrakeHeld,jumpSequence});}
+      if(physics){workers.add(this);if(dynamicCourse)courseWorkers.set(this,{...settings});this.addEventListener?.('message',event=>{if(event.data?.labReplayError)window.dispatchEvent(new CustomEvent('polytrack-lab-replay-error',{detail:{message:event.data.message}}));});this.postMessage({labPhysics:true,boost:boostHeld,handbrake:handbrakeHeld,jumpSequence});}
     }
-    terminate(){workers.delete(this);courseWorkers.delete(this);super.terminate();}
+    terminate(){try{this.postMessage({labDisposeReplays:true});}catch{}workers.delete(this);courseWorkers.delete(this);super.terminate();}
   };
   const sendCourseSettings=input=>{
     if(!window.PolyTrackLab?.getActiveCourse?.())throw Error('Open a Lab course before changing its live physics.');

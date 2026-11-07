@@ -95,3 +95,5 @@
 @media(max-width:620px){#ui .lab-car-thumbnail{flex-basis:40px;width:40px;height:40px}#ui .leaderboard-ui[data-lab-leaderboard] .lab-public-row{gap:6px}}
 
 /* Selected ghost lanes keep the native result rhythm and spacing. */
+.lab-replay-error{position:fixed;bottom:16px;left:16px;right:16px;z-index:10000;padding:12px;background:#293566;color:#fff;font:16px ForcedSquare,sans-serif}.lab-replay-error[hidden]{display:none}
+#ui .track-info-ui .lab-runway-demo{font-size:20px;padding:8px 12px;margin-bottom:12px}

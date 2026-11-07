@@ -3,8 +3,8 @@
   'use strict';
   const lab=window.PolyTrackLab,storageKey='polytrack-lab:courses:v1',sessionKey='polytrack-lab.course-session.v1',pendingKey='polytrack-lab.course-launch.v1';
   const read=()=>{try{const value=JSON.parse(localStorage.getItem(storageKey)||'[]');if(!Array.isArray(value))return [];const result=[];for(const row of value.slice(0,30)){try{if(!/^[a-f0-9]{64}$/.test(row?.trackId))continue;const course=lab.validateLabCourse(Object.fromEntries(['code','name','author','notes','physics','checkpoints','objects'].filter(key=>row[key]!==undefined).map(key=>[key,row[key]])));if(lab.courseRuleKey(course)!==row.ruleKey)continue;result.push({...course,trackId:row.trackId,ruleKey:row.ruleKey});}catch{}}return result;}catch{return [];}};
-  let context=null,player=null,group=null,checkpoint=0,passed=new Set(),previous=null,lastSettings='',elapsed=0,hasRaced=false;
-  try{const saved=JSON.parse(sessionStorage.getItem(sessionKey)||'null');context=read().find(row=>row.trackId===saved?.trackId&&row.ruleKey===saved?.ruleKey)||null;}catch{}
+  let context=null,player=null,group=null,checkpoint=0,passed=new Set(),previous=null,lastSettings='',elapsed=0,hasRaced=false,returnSettings=null;
+  try{const saved=JSON.parse(sessionStorage.getItem(sessionKey)||'null');context=read().find(row=>row.trackId===saved?.trackId&&row.ruleKey===saved?.ruleKey)||null;if(context&&saved.returnSettings)returnSettings=lab.validateLabCourse({code:context.code,physics:saved.returnSettings}).physics;}catch{}
   if(context&&!sessionStorage.getItem(pendingKey))sessionStorage.setItem(pendingKey,JSON.stringify({trackId:context.trackId,ruleKey:context.ruleKey}));
   const baseKey=lab.getPhysicsKey.bind(lab),baseReplay=lab.replayEnabled.bind(lab);
   lab.getActiveCourse=()=>context;
@@ -28,12 +28,13 @@
     const parsed=lab.saveCourseCode(code);const row=lab.getSavedCourse(parsed.trackData.getId());if(!row)throw Error('Use a PolyTrack Lab code to import course rules.');return row;
   };
   const clearObjects=()=>{if(group){group.parent?.remove(group);group.traverse(node=>{node.geometry?.dispose();node.material?.dispose();});group=null;}};
+  function leaveCourse(){const restore=returnSettings;context=null;player=null;returnSettings=null;clearObjects();lastSettings='';sessionStorage.removeItem(sessionKey);sessionStorage.removeItem(pendingKey);if(restore)lab.applySettings(restore);else location.reload();}
   lab.setCourseTrack=id=>{
-    if(context&&context.trackId!==id){const hadPlayer=!!player;try{lab.sendCourseSettings(lab.getSettings());}finally{context=null;player=null;clearObjects();lastSettings='';sessionStorage.removeItem(sessionKey);if(hadPlayer)location.reload();}}
+    if(context&&context.trackId!==id)leaveCourse();
   };
   lab.startCourse=async id=>{
     const course=lab.getSavedCourse(id);if(!course)throw Error('This course package is no longer saved.');
-    sessionStorage.setItem(sessionKey,JSON.stringify({trackId:id,ruleKey:course.ruleKey}));sessionStorage.setItem(pendingKey,JSON.stringify({trackId:id,ruleKey:course.ruleKey}));
+    const restore=returnSettings||lab.getSettings();sessionStorage.setItem(sessionKey,JSON.stringify({trackId:id,ruleKey:course.ruleKey,returnSettings:restore}));sessionStorage.setItem(pendingKey,JSON.stringify({trackId:id,ruleKey:course.ruleKey}));
     try{lab.applySettings(course.physics);}catch(error){sessionStorage.removeItem(sessionKey);sessionStorage.removeItem(pendingKey);throw error;}
   };
   lab.restoreCourseRun=async record=>{
@@ -73,7 +74,7 @@
     if(!context&&!group){if(note.hidden!==true)note.hidden=true;return;}
     const racing=document.body?.dataset.labScene==='game';note.hidden=!context||!racing;
     if(racing)hasRaced=true;
-    if(context&&player&&hasRaced&&!racing&&['home','browse'].includes(document.body?.dataset.labScene)){sessionStorage.removeItem(sessionKey);context=null;player=null;clearObjects();location.reload();return;}
+    if(context&&player&&hasRaced&&!racing&&['home','browse'].includes(document.body?.dataset.labScene)){leaveCourse();return;}
     if(!context||!player||!racing){if(group)group.visible=!!document.querySelector('.editor-ui:not(.hidden)');return;}if(group)group.visible=true;
     elapsed+=dt;if(elapsed<1/60)return;elapsed=0;
     const position=player.getPosition(),values=sectionValues();

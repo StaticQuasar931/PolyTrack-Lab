@@ -88,14 +88,33 @@
     rangeLabel.append(btn('ptlab-text-button','Uncap speed',()=>{draft.maxSpeed=0;selectedPreset=null;refresh();say('No added speed cap. Apply to use this setting.');}));
     advanced.append(advancedSummary,rangeLabel,rangeHelp,tuneTop,grid);
     const vehicle=make('details','ptlab-vehicle-studio'),vehicleSummary=make('summary','','Vehicle studio'),vehicleIntro=make('p','ptlab-vehicle-intro','Resize the real chassis and wheel contacts. Tire width is appearance-only. Apply restarts the engine.');
-    const vehicleTop=make('div','ptlab-vehicle-top'),vehicleImage=make('img','ptlab-vehicle-preview'),vehiclePreviewNote=make('span','ptlab-vehicle-preview-note','Draft preview'),vehicleChoices=make('div','ptlab-vehicle-choices');vehicleImage.alt='Draft car dimensions';vehicleImage.src='images/car_thumbnail_placeholder.png';vehicleTop.append(vehicleImage,vehicleChoices);
+    const vehicleTop=make('div','ptlab-vehicle-top'),vehicleImage=make('img','ptlab-vehicle-preview'),vehiclePreviewNote=make('span','ptlab-vehicle-preview-note','Draft preview'),vehicleChoices=make('div','ptlab-vehicle-choices');
+    const vehiclePreviewCard=make('figure','ptlab-vehicle-preview-card'),vehicleReadout=make('div','ptlab-vehicle-size-readout');vehicleReadout.setAttribute('aria-label','Effective size compared with Original');
+    vehicleImage.alt='Draft car dimensions';vehicleImage.title='Unloaded car geometry. Suspension settles and compresses while driving.';vehicleImage.src='images/car_thumbnail_placeholder.png';vehiclePreviewCard.append(vehicleImage,make('figcaption','','Unloaded car · draft only'));vehicleTop.append(vehiclePreviewCard,vehicleChoices);
     for(const [name,values] of [['Mini',{carScale:.5}],['Giant',{carScale:2}],['Monster wheels',{wheelRadius:1.7,wheelWidth:1.8}],['Long body',{bodyLength:1.6,wheelBase:1.2}]])vehicleChoices.append(btn('ptlab-vehicle-choice',name,()=>choose({...draft,...values},name)));
     vehicleChoices.append(btn('ptlab-vehicle-choice','Original size',()=>{for(const field of fields().filter(f=>f.group==='vehicle'))draft[field.key]=field.default;selectedPreset=null;refresh();say('Car dimensions reset in the draft. Apply to restore the physical size.');}));
-    vehicle.append(vehicleSummary,vehicleIntro,vehicleTop,vehiclePreviewNote,vehicleGrid);vehicle.addEventListener('toggle',()=>{if(vehicle.open)queuePreview();});
-    function queuePreview(){clearTimeout(previewTimer);const sequence=++previewSequence;if(!dialog.open||!vehicle.open)return;previewTimer=setTimeout(async()=>{if(!fields().every(f=>Number.isFinite(draft[f.key])&&draft[f.key]>=f.min&&draft[f.key]<=f.max))return;try{const image=await lab().renderVehiclePreview?.({...draft});if(sequence!==previewSequence||!dialog.open)return;if(image){vehicleImage.src=image;vehicleImage.hidden=false;vehiclePreviewNote.textContent='Draft · whole car '+num(draft.carScale)+'× · wheel radius '+num(draft.wheelRadius)+'×';}else{vehicleImage.hidden=true;vehiclePreviewNote.textContent='Preview will appear when car resources finish loading.';}}catch(error){if(sequence===previewSequence)vehiclePreviewNote.textContent=error.message;}},140);}
+    vehicle.append(vehicleSummary,vehicleIntro,vehicleTop,vehicleReadout,vehiclePreviewNote,vehicleGrid);vehicle.addEventListener('toggle',()=>{if(vehicle.open)queuePreview();});
+    function queuePreview(){
+      clearTimeout(previewTimer);const sequence=++previewSequence;if(!dialog.open||!vehicle.open)return;
+      const values=lab().vehicleDimensions?.({labVehiclePreviewSettings:draft})||draft,scale=values.carScale||1;
+      vehicleReadout.replaceChildren(make('span','',`Body W ${num(scale*values.bodyWidth)}× · H ${num(scale*values.bodyHeight)}× · L ${num(scale*values.bodyLength)}×`),make('span','',`Wheel radius ${num(scale*values.wheelRadius)}× · tire width ${num(scale*values.wheelWidth)}× (visual)`));
+      vehicleImage.setAttribute('aria-busy','true');vehiclePreviewNote.textContent='Updating draft preview…';
+      previewTimer=setTimeout(async()=>{
+        if(!fields().every(f=>Number.isFinite(draft[f.key])&&draft[f.key]>=f.min&&draft[f.key]<=f.max)){vehicleImage.hidden=true;vehicleImage.setAttribute('aria-busy','false');vehiclePreviewNote.textContent='Enter valid values to preview the car.';return;}
+        try{
+          const previewValues={...draft},image=await lab().renderVehiclePreview?.(previewValues);
+          if(sequence!==previewSequence||!dialog.open||!vehicle.open)return;
+          vehicleImage.setAttribute('aria-busy','false');
+          if(image){vehicleImage.src=image;vehicleImage.hidden=false;vehiclePreviewNote.textContent=lab().vehiclePreviewOptions?.(previewValues).framing==='fit'?'Fitted view · large cars are zoomed out. Size multipliers above stay exact.':'Original camera scale · smaller cars stay visibly smaller.';}
+          else{vehicleImage.hidden=true;vehiclePreviewNote.textContent='Preview will appear when car resources finish loading.';}
+        }catch(error){if(sequence===previewSequence){vehicleImage.hidden=true;vehicleImage.setAttribute('aria-busy','false');vehiclePreviewNote.textContent=error.message;}}
+      },140);
+    }
     const bindings=make('div','ptlab-binding-mount');
+    const sectionLinks=make('nav','ptlab-section-links');sectionLinks.setAttribute('aria-label','Physics Lab sections');
+    for(const [label,target] of [['Driving styles',presetSection],['Vehicle studio',vehicle],['Advanced tuning',advanced]])sectionLinks.append(btn('ptlab-section-link',label,()=>{if(target.tagName==='DETAILS')target.open=true;requestAnimationFrame(()=>{target.scrollIntoView({block:'start',behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});const heading=target.querySelector('summary,h2');if(heading){if(heading.tagName!=='SUMMARY')heading.tabIndex=-1;heading.focus({preventScroll:true});}});}));
     const history=make('details','ptlab-saved-section ptlab-history'),historySummary=make('summary','','Recent experiments'),historyList=make('div');history.append(historySummary,historyList);
-    scroll.append(bindings,presetSection,vehicle,warning,advanced,saved,history);
+    scroll.append(bindings,sectionLinks,presetSection,vehicle,warning,advanced,saved,history);
     window.PolyTrackLab.mountBindings?.(bindings,()=>{const next=lab().enableAllMechanics(draft);for(const key of ['boost','handbrake','jump','airJumps'])draft[key]=next[key];selectedPreset=null;refresh();say('Boost, slide and double jump enabled in the draft. Apply to play.');});
     const status = make('div','ptlab-status'); status.setAttribute('role','status'); status.setAttribute('aria-live','polite');
     const footer = make('footer','ptlab-footer'), stateCopy = make('div','ptlab-state-copy'), changeSummary = make('strong','ptlab-change-summary');

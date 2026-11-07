@@ -98,7 +98,15 @@
 .ptlab-vehicle-studio>summary{cursor:pointer;font-size:26px;padding:8px 0}
 .ptlab-vehicle-intro,.ptlab-range-help{font-size:17px;line-height:1.35;opacity:.8}
 .ptlab-vehicle-top{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
-.ptlab-vehicle-preview{width:220px;height:150px;object-fit:contain;background:#ffffff08}
+.ptlab-vehicle-preview-card{margin:0;flex:0 0 220px;text-align:center}
+.ptlab-vehicle-preview-card>figcaption{font-size:15px;opacity:.75;margin-top:4px}
+.ptlab-vehicle-preview{display:block;width:220px;height:220px;object-fit:contain;background:#ffffff08;transition:opacity .12s}
+.ptlab-vehicle-preview[aria-busy=true]{opacity:.45}
+.ptlab-vehicle-size-readout{display:flex;gap:8px 18px;flex-wrap:wrap;margin:12px 0 4px;font-size:17px;line-height:1.4}
+.ptlab-vehicle-size-readout>span{padding:5px 8px;background:#ffffff09}
+.ptlab-section-links{display:flex;flex-wrap:wrap;gap:8px;position:sticky;top:-10px;z-index:3;padding:9px 10px;background:var(--surface-secondary-color);border-bottom:1px solid #ffffff20}
+.ptlab-section-link{padding:8px 12px;font-size:19px}
+.ptlab-presets-section,.ptlab-vehicle-studio,.ptlab-advanced{scroll-margin-top:64px}
 .ptlab-vehicle-choices{display:flex;gap:8px;flex-wrap:wrap;flex:1;min-width:230px}
 .ptlab-vehicle-choice{font:italic 19px ForcedSquare,Arial,sans-serif;padding:9px 13px}
 .ptlab-vehicle-preview-note{display:block;font-size:16px;margin:8px 0 16px;opacity:.8}

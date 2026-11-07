@@ -26,6 +26,80 @@ const labCourseBounds={acceleration:[0,1000],reverse:[0,1000],braking:[0,1000],g
 let labBoost=false,labHandbrake=false,labJumpSequence=0;
 const labPlayerCars=new Set();
 const labPlayerState=new Map();
+let labNativeInit=null;
+const labReplayGroups=new Map(),labReplayCars=new Map();
+function labReplayValues(input){
+  if(!input||typeof input!=='object'||Array.isArray(input))throw new Error('Saved replay physics are missing.');
+  const next={...labDefaults};
+  for(const [key,value] of Object.entries(input)){
+    const bounds=labCourseBounds[key];
+    if(!Object.prototype.hasOwnProperty.call(labDefaults,key)||!bounds||typeof value!=='number'||!Number.isFinite(value)||value<bounds[0]||value>bounds[1]||['airJumps','boostAuto','airJumpUnlimited'].includes(key)&&!Number.isInteger(value))throw new Error('Saved replay physics are invalid: '+key);
+    next[key]=value;
+  }
+  return next;
+}
+function labReplayGroupKey(values){return Object.keys(labDefaults).map(key=>key+':'+values[key]).join('|');}
+function labDisposeReplayGroup(group){
+  if(labReplayGroups.get(group.key)!==group)return;
+  labReplayGroups.delete(group.key);for(const id of group.ids)labReplayCars.delete(id);group.ids.clear();group.pending.length=0;group.worker.terminate();
+}
+function labReplayFailure(group,error,ids=group?[...group.ids]:[]){
+  const message=String(error?.message||error||'Replay simulation could not start.').slice(0,300);
+  if(group)labDisposeReplayGroup(group);
+  self.postMessage?.({labReplayError:true,message,carIds:ids});
+}
+function labInitializeReplayGroup(group){
+  if(group.initialized||!labNativeInit)return;
+  group.worker.postMessage({...labNativeInit});group.initialized=true;
+  for(const message of group.pending)group.worker.postMessage(message);group.pending.length=0;
+}
+function labReplayGroup(values){
+  const stock=Object.keys(labDefaults).every(key=>values[key]===labDefaults[key]),key=stock?'stock':labReplayGroupKey(values);
+  if(labReplayGroups.has(key))return labReplayGroups.get(key);
+  if(labReplayGroups.size>=10)throw new Error('Choose up to 10 different replay setups at once.');
+  if(typeof self.Worker!=='function')throw new Error('This browser cannot isolate recorded replay physics.');
+  const url=new URL(stock?'simulation_worker.bundle.js':'lab-physics-worker.js',self.location.href);
+  if(!stock){url.searchParams.set('lab','1.6.0');url.hash=encodeURIComponent(JSON.stringify(values));}
+  const worker=new self.Worker(url.href),group={key,worker,ids:new Set(),pending:[],initialized:false};labReplayGroups.set(key,group);
+  worker.addEventListener('message',event=>{
+    if(labReplayGroups.get(key)!==group)return;const data=event.data;
+    if(data?.labReplayError){labReplayFailure(group,data.message);return;}
+    if(data?.messageType===10&&Array.isArray(data.carStateBuffers)){
+      const buffers=data.carStateBuffers.filter(buffer=>buffer?.byteLength>=4&&group.ids.has(new DataView(buffer).getUint32(0,true)));
+      if(buffers.length)self.postMessage({messageType:10,carStateBuffers:buffers},buffers);return;
+    }
+    if(data?.messageType===8&&group.ids.has(data.carId)){
+      self.postMessage(data);group.ids.delete(data.carId);labReplayCars.delete(data.carId);if(!group.ids.size)labDisposeReplayGroup(group);
+    }
+  });
+  worker.addEventListener('error',event=>{event.preventDefault?.();if(labReplayGroups.get(key)===group)labReplayFailure(group,event.message||'Recorded replay engine failed to load.');});
+  return group;
+}
+function labRouteReplayMessage(message,event){
+  if(message?.labDisposeReplays===true){event.stopImmediatePropagation();for(const group of [...labReplayGroups.values()])labDisposeReplayGroup(group);return true;}
+  if(message?.messageType===0){
+    // Keep the original Init vertices: the parent is allowed to replace its own
+    // hull, but an Original replay must build the untouched native collider.
+    labNativeInit={...message};for(const group of [...labReplayGroups.values()])try{labInitializeReplayGroup(group);}catch(error){labReplayFailure(group,error);}return false;
+  }
+  const existing=labReplayCars.get(message?.carId);
+  if(existing&&[4,5,6,7].includes(message.messageType)){
+    event.stopImmediatePropagation();try{if(existing.initialized)existing.worker.postMessage(message);else existing.pending.push(message);
+    if(message.messageType===4){existing.ids.delete(message.carId);labReplayCars.delete(message.carId);if(!existing.ids.size)labDisposeReplayGroup(existing);}}catch(error){labReplayFailure(existing,error);}return true;
+  }
+  if(message?.messageType!==1&&!(message?.messageType===3&&message.carRecording!=null&&['stock','custom'].includes(message._labPhysicsMode)))return false;
+  event.stopImmediatePropagation();
+  let targetGroup=null;
+  try{
+    if(!Number.isSafeInteger(message.carId)||message.carId<0||message.carId>0xffffffff)throw new Error('Invalid replay car identity.');
+    if(existing)throw new Error('The recorded car is already running.');
+    const values=message.messageType===1||message._labPhysicsMode==='stock'?{...labDefaults}:labReplayValues(message._labPhysicsSettings);
+    const group=targetGroup=labReplayGroup(values),forward={...message};delete forward._labPhysicsMode;delete forward._labPhysicsSettings;
+    group.ids.add(message.carId);labReplayCars.set(message.carId,group);
+    labInitializeReplayGroup(group);if(group.initialized)group.worker.postMessage(forward);else group.pending.push(forward);
+  }catch(error){labReplayFailure(targetGroup,error,targetGroup?[...targetGroup.ids]:[message.carId]);}
+  return true;
+}
 self.addEventListener('message',event=>{
   if(event.data?.labCourseSettings){
     event.stopImmediatePropagation();const values=event.data.labCourseSettings;
@@ -35,6 +109,7 @@ self.addEventListener('message',event=>{
   }
   if(event.data?.labPhysics){labBoost=event.data.boost===true;labHandbrake=event.data.handbrake===true;if(Number.isSafeInteger(event.data.jumpSequence)&&event.data.jumpSequence>=0)labJumpSequence=event.data.jumpSequence;if(event.data.cancelJump===true)for(const state of labPlayerState.values())state.jumpSequence=labJumpSequence;event.stopImmediatePropagation();return;}
   const message=event.data;
+  if(labRouteReplayMessage(message,event))return;
   if(message?.messageType===0)labScaleCollisionInit(message,labSettings);
   if(message?.messageType===3){if(message.carRecording==null){labPlayerCars.add(message.carId);labPlayerState.set(message.carId,{jumpSequence:labJumpSequence,cooldown:0});}else{labPlayerCars.delete(message.carId);labPlayerState.delete(message.carId);}}
   else if(message?.messageType===4){labPlayerCars.delete(message.carId);labPlayerState.delete(message.carId);}

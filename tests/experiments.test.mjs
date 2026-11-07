@@ -49,9 +49,9 @@ test('legacy fingerprints decode safely without rewriting or deleting original p
   storage.setItem('polytrack-lab:scores:unknown:1',original);
   const unknown=lab.getTrackExperiments(trackId).find(entry=>entry.physicsKey==='unknown:1');assert.equal(unknown.physicsValues,null);assert.equal(unknown.replayAvailable,false);assert.throws(()=>lab.restoreRunSettings(unknown),/no complete physics/);
 });
-test('restoring a run reapplies its exact setup before matching local replay can be decoded',()=>{
+test('local replay carries its own physics without replacing the active setup',()=>{
   const {lab,stats}=environment();lab.saveSettings(lab.presets.find(preset=>preset.id==='arcade').values);finish(lab,11000);const record=lab.getTrackExperiments(trackId)[0];
-  lab.saveSettings(lab.getDefaults());assert.throws(()=>lab.getLocalReplay(record),/Restore this run/);
+  lab.saveSettings(lab.getDefaults());const independent=lab.getLocalReplay(record);assert.equal(independent.recording.labPhysicsMode,'custom');assert.equal(independent.recording.labPhysicsValues.acceleration,1.5);assert.equal(lab.getPhysicsKey(),'stock');assert.equal(stats().reloads,0);
   lab.restoreRunSettings(record);assert.equal(stats().reloads,1);assert.equal(lab.getPhysicsKey(),record.physicsKey);
   const replay=lab.getLocalReplay(record);assert.ok(replay.recording instanceof Recording);assert.equal(replay.time.numberOfFrames,11000);assert.equal(replay.isSelf,true);
   lab.saveSettings(lab.presets.find(preset=>preset.id==='rocket').values);finish(lab,9000);const rocket=lab.getTrackExperiments(trackId)[0];assert.equal(rocket.presetId,3);assert.equal(rocket.replayAvailable,false);assert.throws(()=>lab.getLocalReplay(rocket),/extra controls/);
@@ -92,14 +92,14 @@ test('finish hook, native PB path and API callback capture a single run while sl
   assert.equal(lab.getRunHistory().length,1);assert.equal(saves,1);
   finish(lab,1500);await records.setRecord(0,trackId,false,new Frames(1500),new Recording());assert.equal(lab.getRunHistory().length,2);assert.equal(saves,1);assert.equal(records.getRecordTime().numberOfFrames,1000);
 });
-test('runtime bridge validates course identity, decodes public replay and prevents playback with wrong physics',()=>{
+test('runtime bridge validates course identity and keeps public ghosts Original alongside custom physics',()=>{
   const {lab,events,stats}=environment();assert.ok(events.includes('polytrack-lab-runtime-ready'));
   assert.throws(()=>lab.playTrackCode('PolyTrackFixture','b'.repeat(64)),/identity/);assert.equal(stats().played,0);lab.playTrackCode('PolyTrackFixture',trackId);assert.equal(stats().played,1);
   const replay=lab.decodePublicReplay({status:'available',recording:'recording',carStyle:'style',nickname:'Public racer',frames:1234});assert.equal(replay.isSelf,false);lab.watchTrackCode('PolyTrackFixture',[replay],trackId);assert.equal(stats().watched,1);
   lab.raceTrackCode('PolyTrackFixture',[replay,replay],trackId);assert.equal(stats().raced,1);
   assert.throws(()=>lab.raceTrackCode('PolyTrackFixture',Array(11).fill(replay),trackId),/10 valid/);
   assert.throws(()=>lab.raceTrackCode('PolyTrackFixture',[replay],'b'.repeat(64)),/identity/);assert.equal(stats().raced,1);
-  lab.saveSettings(lab.presets.find(preset=>preset.id==='arcade').values);assert.throws(()=>lab.watchTrackCode('PolyTrackFixture',[replay],trackId),/physics setup/);
-  assert.throws(()=>lab.raceTrackCode('PolyTrackFixture',[replay],trackId),/physics setup/);
+  lab.saveSettings({...lab.presets.find(preset=>preset.id==='arcade').values,carScale:.5,wheelRadius:1.7});const active=JSON.stringify(lab.getSettings());lab.watchTrackCode('PolyTrackFixture',[replay],trackId);lab.raceTrackCode('PolyTrackFixture',[replay],trackId);
+  assert.equal(stats().watched,2);assert.equal(stats().raced,2);assert.equal(stats().reloads,0);assert.equal(JSON.stringify(lab.getSettings()),active);assert.equal(replay.recording.labPhysicsMode,'stock');assert.equal(replay.recording.labPhysicsValues.acceleration,1);assert.equal(replay.recording.labPhysicsValues.carScale,1);
   assert.throws(()=>lab.decodePublicReplay({status:'missing',recording:'recording',carStyle:'style',nickname:'Public racer',frames:1234}),/unavailable/);
 });

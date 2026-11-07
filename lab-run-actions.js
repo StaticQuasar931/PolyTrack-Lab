@@ -16,9 +16,9 @@
     details(record.physicsValues);
     if(record.courseRules)content.append(make("p","lab-run-meta","Saved course rules: "+record.courseRules.checkpoints.length+" physics sections and "+record.courseRules.objects.length+" Lab objects. Restoring this run restores those rules too."));
     if(record.physicsValues)button('Use setup & play',()=>restart(record,'play'));
-    if(record.replayAvailable)button('Watch replay',async()=>{if(!record.isCurrentSetup)return restart(record,'local-watch');if(lab.trackActions?.trackId!==record.trackId)throw Error('Open this track before watching its replay.');const replay=lab.getLocalReplay(record);if(!replay)throw Error('This recording is unavailable.');lab.ensureGhostsVisible?.();dialog.close();lab.trackActions.watch([replay]);});
+    if(record.replayAvailable)button('Watch replay',async()=>{if(lab.trackActions?.trackId!==record.trackId)throw Error('Open this track before watching its replay.');const replay=lab.getLocalReplay(record);if(!replay)throw Error('This recording is unavailable.');lab.ensureGhostsVisible?.();dialog.close();lab.trackActions.watch([replay]);});
     else content.append(make('p','lab-run-meta',record.physicsValues&&['boost','handbrake','jump'].some(key=>record.physicsValues[key]>0)?'Time and setup saved. Extra control inputs cannot be replayed.':'Time and setup saved. This older run has no retained replay.'));
-    if(record.replayAvailable)button('Race this ghost',async()=>{if(!record.isCurrentSetup)return restart(record,'local-race');if(lab.trackActions?.trackId!==record.trackId)throw Error('Open this track before racing its ghost.');const replay=lab.getLocalReplay(record);if(!replay)throw Error('This recording is unavailable.');lab.ensureGhostsVisible?.();dialog.close();lab.markTrackStarting?.();lab.trackActions.race([replay]);});
+    if(record.replayAvailable)button('Race this ghost',async()=>{if(lab.trackActions?.trackId!==record.trackId)throw Error('Open this track before racing its ghost.');const replay=lab.getLocalReplay(record);if(!replay)throw Error('This recording is unavailable.');lab.ensureGhostsVisible?.();dialog.close();lab.markTrackStarting?.();lab.trackActions.race([replay]);});
   };
   async function replayFile(trackId){if(!cache.has(trackId))cache.set(trackId,fetch(`snapshots/replays/${trackId}.json`).then(async r=>{if(!r.ok){cache.delete(trackId);return null;}const text=await r.text();if(text.length>=20000000)throw Error('Replay file exceeds the size limit.');const v=JSON.parse(text);if(v.trackId!==trackId||v.physics!=='stock'||!Array.isArray(v.entries))throw Error('Invalid replay capture.');return v;}).catch(error=>{cache.delete(trackId);throw error;}));return cache.get(trackId);}
   lab.getPublicReplayCapture=replayFile;
@@ -29,11 +29,6 @@
     if(rows.some(row=>!row))throw Error('One or more selected results have no saved recording. Choose another result.');
     if(lab.trackActions?.trackId!==trackId)throw Error('Open this track before using its ghosts.');
     lab.ensureGhostsVisible?.();
-    if(lab.getPhysicsKey()!=='stock'){
-      const code=await codeFor(trackId);
-      sessionStorage.setItem(key,JSON.stringify({type:'public-selection',mode,trackId,code,entries:rows.map(({rank,nickname,timeMs,recordingId})=>({rank,nickname,timeMs,recordingId}))}));
-      try{await lab.applySettings(lab.getDefaults());}catch(error){sessionStorage.removeItem(key);throw error;}return;
-    }
     const replays=rows.map(row=>lab.decodePublicReplay(row));dialog.close();
     if(mode==='race'){lab.markTrackStarting?.();lab.trackActions.race(replays);}else lab.trackActions.watch(replays);
   };
@@ -43,7 +38,7 @@
     if(request!==dialogToken||!dialog.open)return;
     const row=capture?.entries.find(r=>r.rank===entry.rank&&r.timeMs===entry.timeMs&&r.nickname===entry.nickname);
     if(!row||row.status!=='available'){status.textContent='No saved replay is available for this result.';return;}
-    status.textContent='Original physics · saved public replay and car style';
+    status.textContent='Ghost: Original physics. Your setup stays unchanged.';
     button('Watch replay',()=>lab.playPublicSelection(trackId,[row],'watch'));
     button('Race this ghost',()=>lab.playPublicSelection(trackId,[row],'race'));
   };
@@ -57,9 +52,9 @@
       if(pending.type==='play'){lab.markTrackStarting?.();await lab.playTrackCode(pending.code,pending.trackId);}
       else if(pending.type==='local-watch'){const record=lab.getLocalRun?.(pending.runId,pending.trackId)||lab.getTrackExperiments(pending.trackId).find(r=>r.runId===pending.runId);const replay=record&&lab.getLocalReplay(record);if(!replay)throw Error('The saved recording is unavailable.');await lab.watchTrackCode(pending.code,[replay],pending.trackId);}
       else if(pending.type==='local-race'){const record=lab.getLocalRun?.(pending.runId,pending.trackId)||lab.getTrackExperiments(pending.trackId).find(r=>r.runId===pending.runId);const replay=record&&lab.getLocalReplay(record);if(!replay)throw Error('The saved recording is unavailable.');lab.markTrackStarting?.();await lab.raceTrackCode(pending.code,[replay],pending.trackId);}
-      else if(pending.type==='public-watch'){const row=(await replayFile(pending.trackId))?.entries.find(r=>r.rank===pending.rank&&r.nickname===pending.nickname&&r.timeMs===pending.timeMs&&r.recordingId===pending.recordingId&&r.status==='available');if(!row||lab.getPhysicsKey()!=='stock')throw Error('The original-physics replay is unavailable or the public capture changed.');await lab.watchTrackCode(pending.code,[lab.decodePublicReplay(row)],pending.trackId);}
+      else if(pending.type==='public-watch'){const row=(await replayFile(pending.trackId))?.entries.find(r=>r.rank===pending.rank&&r.nickname===pending.nickname&&r.timeMs===pending.timeMs&&r.recordingId===pending.recordingId&&r.status==='available');if(!row)throw Error('The original-physics replay is unavailable or the public capture changed.');await lab.watchTrackCode(pending.code,[lab.decodePublicReplay(row)],pending.trackId);}
       else if(pending.type==='public-selection'){
-        if(!['watch','race'].includes(pending.mode)||!Array.isArray(pending.entries)||!pending.entries.length||pending.entries.length>10||lab.getPhysicsKey()!=='stock')throw Error('Invalid saved ghost selection.');
+        if(!['watch','race'].includes(pending.mode)||!Array.isArray(pending.entries)||!pending.entries.length||pending.entries.length>10)throw Error('Invalid saved ghost selection.');
         const capture=await replayFile(pending.trackId),rows=pending.entries.map(entry=>capture?.entries.find(row=>row.rank===entry.rank&&row.nickname===entry.nickname&&row.timeMs===entry.timeMs&&row.recordingId===entry.recordingId&&row.status==='available'));
         if(rows.some(row=>!row))throw Error('A selected recording is unavailable or the capture changed.');
         const replays=rows.map(row=>lab.decodePublicReplay(row));

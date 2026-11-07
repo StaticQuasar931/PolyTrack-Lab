@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "code": "PolyTrack24pdlTv2riiDGAHfXJFKS5lydVgqgcz3JlWBE5IUuU5TfNzsH3hdTO7cmkyvfBSKh8QI1N35otWWVdutlJlSYDBqw2wtWgYpDSRv6faruLQjsSwB88gOL0b6atqV6JheXiOHVtxovS9ZglxptqvPcvtdYrub6W9UV90f4azwTqmhTaHexNV3be9iIjCbRvkIEcPNn40AzH3ITU6kPKnR6ptEqM5VCJq7Hnmth2RbIJEbaLFKNCXRXbSJ0H0Cqkio1IIRZ18RqU7uSRCVSqh2RdeacXpAnt76a0jKnpaQ7ur5nMSzgbZaHNkvlzJTEuK4E2AZdO17B3CrhMbKm5mgAMVJ8yeRxB11fseCvoHJc6bVbLVBrjb7m05o0Emtgt9NduPI1tYdqV20egQsFyO5mDXRezqMZgAaofP7AasbWeGIBHcsZ18eK5BU0zxzWg7qoL3Obt5eC0FAleMZPcOd11jZV23iAFp2MHBd5K9pCwOs7jpruVeAG4rdfY9O5L3Vcfi4eABBVAnB2T0dkzgGeJxTf5E5Xzjl7laiE0szKq6n4xgUHM79NqoegjVUbAdPpZi6ApWUfwf8JOe3MjHGHuvJo155ffZIYzhndfeyh2YfrfNgbzPWQdtIOfNf8QWXHlEnfyfd68y6XgsbWzfhiLOfPw4aZsJLHGX4Kr3Krj3eKr1qr9d3jeljIqWTaxZ20exADHcpJir186SbWzGhnD5tZNSCXIecrmdRzA3qZMaWyt5d0QOA2t3JA5IxufdOg6Asy3xHjWCHjeYB7xoiF8EjqXwFMqaBXRdSsHvjEG1sALUGgV8Om4hbLoGPcfnMocQk8rF1aocea8wjF4hHKWQPeQ9CyxDVLQBP0sAdMZbjNAeTSsnnkAa49Da0f9fLoidkKfr24PqscxB7gpQDYI0F7RwYdiGMAeA8K0CGDRQCQH0xt5aDmiFjq0Yo9kYxoN1goDImRhhe9NfFZVgvjZfwfB5VcPLyJb9XWh0fhvg9n9lDXheuj5NiDzZiS9yQhRWuBfHgpYfde5fhsjNKSjbM9NqTvawzKbKH3RyEp32Fb0Xuio7Qkpzl7aLH8N6rCheTOWPlYksxrvMgtvEYyZx3FpjRyUeQ3n10EIFxHLTOevA0IuREC",
+  "name": "Desert Lab: Boosts & Rings",
+  "author": "PolyTrack Lab",
+  "notes": "Green pads add power while you cross them. Gold rings count bonus crossings. Blue boxes lower gravity inside them. Press your Jump key for a jump and again for a double jump. The side ramps are optional. CP1 lowers gravity; CP2 restores gravity and loosens grip; CP3 adds power; CP4 restores normal power. The normal Skyway is a separate track without these rules.",
+  "physics": {
+    "acceleration": 1,
+    "reverse": 1,
+    "braking": 1,
+    "grip": 1,
+    "steering": 1,
+    "downforce": 1,
+    "coasting": 0,
+    "maxSpeed": 0,
+    "boost": 0,
+    "handbrake": 0,
+    "jump": 8,
+    "airJumps": 1,
+    "boostAuto": 0,
+    "jumpCooldown": 0.75,
+    "airJumpCooldown": 0.15,
+    "airJumpUnlimited": 0,
+    "carScale": 1,
+    "bodyWidth": 1,
+    "bodyLength": 1,
+    "bodyHeight": 1,
+    "wheelRadius": 1,
+    "wheelWidth": 1,
+    "wheelTrack": 1,
+    "wheelBase": 1,
+    "suspensionLength": 1,
+    "gravity": 1
+  },
+  "checkpoints": [
+    {
+      "after": 1,
+      "values": {
+        "gravity": 0.5
+      }
+    },
+    {
+      "after": 2,
+      "values": {
+        "gravity": 1,
+        "grip": 0.65
+      }
+    },
+    {
+      "after": 3,
+      "values": {
+        "acceleration": 1.5,
+        "grip": 1
+      }
+    },
+    {
+      "after": 4,
+      "values": {
+        "acceleration": 1
+      }
+    },
+    {
+      "after": 5,
+      "values": {
+        "acceleration": 1,
+        "gravity": 1,
+        "grip": 1
+      }
+    }
+  ],
+  "objects": [
+    {
+      "type": "boost",
+      "x": 0,
+      "y": 60.15,
+      "z": -60,
+      "size": 36,
+      "yaw": 0,
+      "strength": 2
+    },
+    {
+      "type": "ring",
+      "x": 0,
+      "y": 66,
+      "z": -150,
+      "size": 6,
+      "yaw": 0,
+      "strength": 1
+    },
+    {
+      "type": "boost",
+      "x": 0,
+      "y": 60.15,
+      "z": -220,
+      "size": 36,
+      "yaw": 0,
+      "strength": 2.5
+    },
+    {
+      "type": "gravity",
+      "x": 40,
+      "y": 80,
+      "z": -260,
+      "size": 60,
+      "yaw": 0,
+      "strength": 0.25
+    },
+    {
+      "type": "ring",
+      "x": 40,
+      "y": 68,
+      "z": -280,
+      "size": 10,
+      "yaw": 0,
+      "strength": 1
+    },
+    {
+      "type": "gravity",
+      "x": 0,
+      "y": 75,
+      "z": -340,
+      "size": 30,
+      "yaw": 0,
+      "strength": 0.25
+    },
+    {
+      "type": "ring",
+      "x": 0,
+      "y": 66,
+      "z": -350,
+      "size": 6,
+      "yaw": 0,
+      "strength": 1
+    },
+    {
+      "type": "boost",
+      "x": 450,
+      "y": 60.15,
+      "z": -600,
+      "size": 30,
+      "yaw": 90,
+      "strength": 2
+    }
+  ]
+}
