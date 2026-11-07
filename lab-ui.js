@@ -145,7 +145,7 @@
       const changes = fields().filter(f => draft[f.key] !== current[f.key]).length;
       const stock = fields().every(f => current[f.key] === original[f.key]);
       const identity=lab().getSetupIdentity?.(current),save=lab().getSetupHistory?.()[0];
-      activeBadge.textContent = `${identity?.label||'Original'} · ${stock?'unchanged':'active'}${save?.saveNumber?' · Save #'+save.saveNumber:''}${lab().getPracticeState?.().enabled?' · TAS practice':''}`; activeBadge.classList.toggle('ptlab-custom-active',!stock);
+      activeBadge.textContent = `${identity?.label||'Original'} · ${stock?'unchanged':'active'}${save?.saveNumber?' · Save #'+save.saveNumber:''}${lab().getPracticeState?.().enabled?' · TAS practice':''}${lab().getWheelState?.().enabled?' · Wheel '+(lab().getWheelState().mode==='modified'?'Modified':'Original'):''}`; activeBadge.classList.toggle('ptlab-custom-active',!stock);
       changeSummary.textContent = changes ? `${changes} unsaved ${changes === 1 ? 'change' : 'changes'}` : 'Draft matches active physics';
       changeSummary.classList.toggle('ptlab-has-changes',changes > 0);
       apply.disabled = applying || !changes || !fields().length; undo.disabled = applying || !changes;

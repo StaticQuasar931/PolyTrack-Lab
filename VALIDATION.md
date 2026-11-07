@@ -85,3 +85,12 @@ Version 1.8 checks:
 - Browser: Stunt park with boost, slide and jump enabled launched Summer 1 with JerrtHu selected. Scene inspection confirmed two six-mesh car groups, with player opacity 1 and ghost opacity 0.22. No new simulation errors occurred. The previous global replay guard no longer hides valid public ghosts; unsupported self recordings remain excluded.
 - TAS records are local and explicitly assisted, with bounded control notes. This release does not provide rewind, a movie editor, or replay export for assisted runs. In-track Apply/TAS controls are excluded from rule-controlled course demos and editor test drives so they cannot replace course rules or abandon unsaved editor work.
 - Local preview console errors remained limited to Kodub's existing weekly-feed cross-origin rejection. No messages or player data were sent externally. Browser artifacts remain outside the public project.
+
+Version 1.9 wheel checks:
+
+- Automated tests cover descriptor-based read-only HID parsing, separate wheel/pedal devices, calibration normalization, three steering response curves, reduced steering strength, dead zones, focus recovery, released-pedal arming and sustained control heartbeats.
+- Actual native WASM tests verify proportional throttle/brake, digital Original braking/reverse, player-only wheel control isolation, stale-input neutralization and proportional native steering state.
+- User confirmed real Logitech PRO input and calibration in normal Chrome. Initial feedback found weak steering and intermittent starting; the focus latch was removed and steering travel reduced. User confirmed on/off was stronger than desired; adjustable steering strength and in-track tuning were added. Final physical feel remains subject to user testing.
+- Wheel settings are staged until Apply/restart; local run metadata and separate setup keys retain the applied steering/pedal configuration. Wheel replay recording remains unavailable.
+
+Wheel button checks: full automated suite passes, including PRO/standard profiles, the actual native action-binding bridge, held-button reset suppression, focus recovery, duplicate-free rebinding, and HID/Gamepad D-pad directions and neutral states. The user confirmed Y restart, X checkpoint reset, Menu pause, A/B selection/back and D-pad navigation work on the connected PRO in normal Chrome. Generic numbered profiles for other wheels remain best-effort and rebindable.

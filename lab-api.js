@@ -64,9 +64,9 @@
     const presetName = presetId !== null ? presetNames[presetId] : values ? 'Custom' : 'Unknown legacy setup';
     return { metadataVersion: 2, physicsKey: key, physicsValues: values ? { ...values } : null,
       presetId, presetName, setupName: typeof identity?.name === 'string' ? identity.name : presetName,
-      setupLabel: (typeof identity?.label === 'string' ? identity.label : presetId !== null ? `${presetId} · ${presetName}` : presetName)+(String(key).includes('~course:')?' · Course rules':'')+(String(key).includes('~tas')?' · TAS practice':''),
+      setupLabel: (typeof identity?.label === 'string' ? identity.label : presetId !== null ? `${presetId} · ${presetName}` : presetName)+(String(key).includes('~course:')?' · Course rules':'')+(String(key).includes('~tas')?' · TAS practice':'')+(String(key).includes('~wheel-analog')?' · Wheel Modified':String(key).includes('~wheel-original')?' · Wheel Original':'')+(String(key).includes('~steering:digital:')?' · On/off steering':String(key).includes('~steering:assisted:')?' · Assisted steering':String(key).includes('~steering:proportional:')?' · Proportional steering':''),
       physicsLabel: presetName, setupHistoryId,
-      replayAvailable: !!values && !String(key).includes('~course:') && !String(key).includes('~tas') && values.boost === 0 && values.handbrake === 0 && values.jump === 0 };
+      replayAvailable: !!values && !String(key).includes('~course:') && !String(key).includes('~tas') && !String(key).includes('~wheel-') && values.boost === 0 && values.handbrake === 0 && values.jump === 0 };
   }
   lab.getCurrentSetupDescriptor = () => {
     const key = profileKey();
@@ -76,6 +76,7 @@
     return { ...setupDescriptor(key, values, typeof history?.id === 'string' ? history.id : null),
       ...(lab.getActiveCourse?.()?{courseRules:Object.fromEntries(['name','author','notes','physics','checkpoints','objects'].map(key=>[key,lab.getActiveCourse()[key]]))}:{}),
       ...(lab.getPracticeRunInfo?.()?{practice:lab.getPracticeRunInfo()}:{}),
+      ...(lab.getWheelRunInfo?.()?{wheel:lab.getWheelRunInfo()}:{}),
       setupSaveNumber: Number.isSafeInteger(history?.saveNumber) ? history.saveNumber : null,
       saveNumber: Number.isSafeInteger(history?.saveNumber) ? history.saveNumber : null };
   };
@@ -91,7 +92,7 @@
     const values = normalizedPhysics(record.physicsValues, true) || decodeLegacyPhysics(key);
     const descriptor = setupDescriptor(key, values, typeof record.setupHistoryId === 'string' ? record.setupHistoryId : null);
     const saveNumber = Number.isSafeInteger(record.setupSaveNumber ?? record.saveNumber) ? record.setupSaveNumber ?? record.saveNumber : null;
-    return { ...descriptor, setupSaveNumber: saveNumber, saveNumber, ...(record.courseRules?{courseRules:record.courseRules}:{}),...(record.practice?{practice:record.practice}:{}),
+    return { ...descriptor, setupSaveNumber: saveNumber, saveNumber, ...(record.courseRules?{courseRules:record.courseRules}:{}),...(record.practice?{practice:record.practice}:{}),...(record.wheel?{wheel:record.wheel}:{}),
       setupName: typeof record.setupName === 'string' ? record.setupName : descriptor.setupName,
       setupLabel: typeof record.setupLabel === 'string' ? record.setupLabel : descriptor.setupLabel };
   }
@@ -140,7 +141,7 @@
       const previous = read(RUN_HISTORY_KEY, []), history = Array.isArray(previous) ? previous : [];
       history.unshift({ runId: record.runId, recordId: record.id, trackId: record.trackId, name: record.name,nickname:record.nickname,
         timeMs: record.frames, date: record.date, physicsKey: record.physicsKey, physicsValues: record.physicsValues,
-        presetId: record.presetId, presetName: record.presetName, setupLabel: record.setupLabel,...(record.courseRules?{courseRules:record.courseRules}:{}),...(record.practice?{practice:record.practice}:{}),
+        presetId: record.presetId, presetName: record.presetName, setupLabel: record.setupLabel,...(record.courseRules?{courseRules:record.courseRules}:{}),...(record.practice?{practice:record.practice}:{}),...(record.wheel?{wheel:record.wheel}:{}),
         setupHistoryId: record.setupHistoryId, setupSaveNumber: record.setupSaveNumber, saveNumber: record.saveNumber, isPersonalBest,
         isSetupBest: record.isSetupBest, captureSource: record.captureSource, verification: 'local',
         replayAvailable: record.replayAvailable,

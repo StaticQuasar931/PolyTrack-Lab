@@ -5,7 +5,7 @@
   lab.mountBindings=(root,enableAll)=>{
     if(root.querySelector('.lab-bindings'))return;
     const section=document.createElement('section');section.className='lab-bindings';
-    const heading=document.createElement('h3');heading.textContent='Lab controls';section.append(heading);
+    const heading=document.createElement('h3');heading.textContent='Lab controls';section.append(heading);const wheel=document.createElement('button');wheel.className='button';wheel.type='button';wheel.textContent='Racing wheel';wheel.title='Calibrate steering and pedals, choose Original or Modified, and rebind controls.';wheel.addEventListener('click',()=>lab.openWheelSetup?.());section.append(wheel);
     for(const [action,name] of [['boost','Boost'],['handbrake','Slide'],['jump','Jump']]){
       const label=document.createElement('label');label.textContent=name+' ';
       const select=document.createElement('select');select.dataset.labBinding=action;select.setAttribute('aria-label',name+' key');

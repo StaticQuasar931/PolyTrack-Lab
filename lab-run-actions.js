@@ -14,6 +14,7 @@
     open(`${time(record.timeMs)} · ${record.setupLabel||record.presetName}`);
     content.append(make('p','lab-run-meta',`${record.nickname || 'Anonymous'} (you) · ${record.saveNumber?'Save #'+record.saveNumber:'Earlier save'} · ${new Date(record.date).toLocaleString(undefined,{dateStyle:'short',timeStyle:'medium'})}`));
     details(record.physicsValues);
+    if(record.wheel){const steering=({digital:"On/off",assisted:"Assisted",proportional:"Proportional"})[record.wheel.steering]||"Proportional",strength=Math.round((record.wheel.steeringStrength??1)*100);content.append(make("p","lab-run-meta",(record.wheel.mode==="modified"?"Wheel Modified: proportional gas and brake-only pedals. ":"Wheel Original: stock car physics, on/off gas and brake/reverse. ")+steering+" steering at "+strength+"%. Time saved locally; wheel replays are unavailable."));}
     if(record.practice)content.append(make("p","lab-run-meta","TAS practice: assisted pacing and steps. Time and settings are saved separately from normal runs; native replay export is unavailable."));
     if(record.courseRules)content.append(make("p","lab-run-meta","Saved course rules: "+record.courseRules.checkpoints.length+" physics sections and "+record.courseRules.objects.length+" Lab objects. Restoring this run restores those rules too."));
     if(record.physicsValues)button(record.practice?'Use physics & play':'Use setup & play',()=>restart(record,'play'));

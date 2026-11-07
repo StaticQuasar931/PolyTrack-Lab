@@ -72,3 +72,19 @@ The supplied game is a compiled distribution, not its editable source project. L
 Open **TAS practice** in a normal track and choose **Enable TAS & restart**. This starts a fresh assisted run. Choose 0.25x, 0.5x, 1x, 2x or 4x pacing, pause/resume, or advance exactly 1, 10 or 100 ticks. Each tick remains 1 ms of native simulation. Held Throttle, Brake, Left and Right switches let you drive while stepping; Release held inputs returns to keyboard controls.
 
 TAS practice times have a separate record namespace and visible label. They cannot replace normal PBs or claim a public comparison. Local run metadata retains the last 128 control edits, with an explicit truncation flag. Return to normal & restart starts a fresh unassisted run. The current TAS tools provide forward stepping and pacing, without rewind, movie editing, or native replay export. Using a saved TAS run's physics restores the car settings; it does not replay the assisted control edits.
+
+## Racing wheel
+
+Wheel buttons bind automatically, including menu controls before pedal calibration. For the Logitech PRO PC layout: A selects/plays, B goes back, X resets to the last checkpoint, Y restarts the track, and Menu pauses/resumes. The D-pad moves menu focus; left/right adjusts selected sliders or options. If a numbered wheel has no exposed D-pad, its first two paddles move focus up/down. Other numbered PC wheels use a generic preset with numbered labels, rather than claiming verified physical labels.
+
+Open **Racing wheel > Wheel buttons & menu controls** to press-to-rebind any action or restore automatic buttons. Rebinding clears duplicate assignments and saves locally per device. Existing steering/pedal calibration is preserved. Held reset buttons fire once; navigation repeats after 400 ms, then at 150 ms intervals. Focus loss or reconnection requires releasing buttons before they activate again.
+
+Defaults use [Logitech's PRO PC button table](https://www.logitech.com/assets/70065/3/pro_racing_wheel_for_pc_samr.pdf) and the browser's [standard Gamepad mapping](https://w3c.github.io/gamepad/). Browser/driver layouts can differ, so every action remains rebindable. Clutch, gears and force feedback remain unused.
+
+Open **Racing wheel** from home, native Controls, or the in-track toolbar. Connect your Logitech PRO in PC mode, calibrate steering/gas/brake, then enable and restart. Chrome/Edge can request read-only Logitech USB access if controller input is unavailable. Clutch, gears and force feedback are not implemented.
+
+Choose steering separately from pedals: **On/off** gives keyboard-style steering past the dead zone, **Assisted** strengthens small turns, and **Proportional** follows the wheel. **Steering strength** (25–100%) reduces maximum steering; 100% on/off matches full keyboard steering. Steering feel sets travel for Assisted/Proportional. Tune or recalibrate inside a normal track, then **Apply & restart this track**. Closing keeps the active run unchanged.
+
+**Original** restores stock car physics and digital pedals, including native brake/reverse. **Modified** keeps Lab tuning and supports proportional throttle and brake-only pedals. After enabling, release both pedals once to arm. Menus, tab focus loss, missing controls and stale input stop wheel commands. Calibration is local; Save/Load wheel setup transfers it between local and published origins, which need separate USB permission. No device commands are sent for force feedback.
+
+Wheel PBs retain their steering mode, strength, response and pedal mode, and use separate setup keys. Wheel replay export is unavailable because the native replay format cannot encode proportional controls. Original public ghosts remain available.

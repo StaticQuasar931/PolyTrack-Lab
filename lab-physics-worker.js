@@ -20,6 +20,20 @@ const labDefaults={acceleration:1,reverse:1,braking:1,grip:1,steering:1,downforc
 for(const key of Object.keys(labDefaults))if(typeof labSettings?.[key]!=='number'||!Number.isFinite(labSettings[key]))labSettings={...labSettings,[key]:labDefaults[key]};
 labSettings.airJumps=Math.max(0,Math.min(99,Math.round(labSettings.airJumps)));
 const labDynamicCourse=labSettings._dynamicCourse===true,labInitialDownforce=labSettings.downforce;
+const labAnalogWheel=labSettings._analogWheel===true,labWheelPedals=labSettings._wheelPedals==='analog'?'analog':'digital';
+let labWheelState={active:false,throttle:0,brake:0,steering:0,lastSeen:-Infinity},labWheelErrorPosted=false;
+const labWheelNow=()=>typeof performance!=='undefined'&&typeof performance.now==='function'?performance.now():Date.now();
+function labWheelPacket(value){
+  if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).some(key=>!['active','throttle','brake','steering'].includes(key))||typeof value.active!=='boolean')throw new Error('Invalid wheel input packet. Controls were released.');
+  if(!value.active)return {active:false,throttle:0,brake:0,steering:0};
+  for(const [key,min,max] of [['throttle',0,1],['brake',0,1],['steering',-1,1]])if(typeof value[key]!=='number'||!Number.isFinite(value[key])||value[key]<min||value[key]>max)throw new Error('Invalid wheel input: '+key+'. Controls were released.');
+  return {active:true,throttle:labWheelPedals==='digital'?(value.throttle>0?1:0):value.throttle,brake:labWheelPedals==='digital'?(value.brake>0?1:0):value.brake,steering:value.steering};
+}
+function labCurrentWheel(now=labWheelNow()){
+  if(!labAnalogWheel)return null;
+  const age=now-labWheelState.lastSeen,fresh=labWheelState.active&&age>=0&&age<=500;
+  return {pedals:labWheelPedals,active:fresh,throttle:fresh?labWheelState.throttle:0,brake:fresh?labWheelState.brake:0,steering:fresh?labWheelState.steering:0};
+}
 const labGeometryBounds={carScale:[.25,4],bodyWidth:[.5,2],bodyHeight:[.5,2],bodyLength:[.5,2],wheelRadius:[.5,2],wheelTrack:[.5,2],wheelBase:[.5,2],suspensionLength:[.5,2],wheelWidth:[.25,3]};
 const labInitialGeometry=Object.fromEntries(Object.keys(labGeometryBounds).map(key=>[key,labSettings[key]]));
 const labCourseBounds={acceleration:[0,1000],reverse:[0,1000],braking:[0,1000],grip:[0,50],steering:[0,8],downforce:[0,100],coasting:[0,100],maxSpeed:[0,1000000],boost:[0,1000],handbrake:[0,100],jump:[0,1000],airJumps:[0,99],gravity:[0,20],boostAuto:[0,1],airJumpUnlimited:[0,1],jumpCooldown:[0,5],airJumpCooldown:[.05,5],...labGeometryBounds};
@@ -67,7 +81,7 @@ function labReplayGroup(values){
   if(labReplayGroups.size>=10)throw new Error('Choose up to 10 different replay setups at once.');
   if(typeof self.Worker!=='function')throw new Error('This browser cannot isolate recorded replay physics.');
   const url=new URL(stock?'simulation_worker.bundle.js':'lab-physics-worker.js',self.location.href);
-  url.searchParams.set('lab','1.8.0');if(!stock)url.hash=encodeURIComponent(JSON.stringify(values));
+  url.searchParams.set('lab','1.9.0');if(!stock)url.hash=encodeURIComponent(JSON.stringify(values));
   const worker=new self.Worker(url.href),group={key,worker,ids:new Set(),pending:[],initialized:false};labReplayGroups.set(key,group);
   worker.addEventListener('message',event=>{
     if(labReplayGroups.get(key)!==group)return;const data=event.data;
@@ -110,6 +124,13 @@ function labRouteReplayMessage(message,event){
   return true;
 }
 self.addEventListener('message',event=>{
+  if(event.data&&Object.prototype.hasOwnProperty.call(event.data,'labWheel')){
+    event.stopImmediatePropagation();
+    if(!labAnalogWheel)return;
+    try{labWheelState={...labWheelPacket(event.data.labWheel),lastSeen:labWheelNow()};labWheelErrorPosted=false;}
+    catch(error){labWheelState={active:false,throttle:0,brake:0,steering:0,lastSeen:labWheelNow()};if(!labWheelErrorPosted){self.postMessage?.({labWheelError:true,message:error.message});labWheelErrorPosted=true;}}
+    return;
+  }
   if(event.data&&Object.prototype.hasOwnProperty.call(event.data,'labPractice')){
     let packet;try{packet=labPracticePacket(event.data.labPractice);}catch(error){event.stopImmediatePropagation();self.postMessage?.({labPracticeError:true,message:error.message});return;}
     const ghostPacket={rate:packet.rate,paused:packet.paused,step:packet.step};labPracticeSeen=true;labPracticeState={...ghostPacket,step:0};
@@ -138,7 +159,7 @@ self.importScripts=(...urls)=>{
   if(urls.some(url=>String(url).endsWith('lib/polytrack_physics.js'))){
     const original=PolyTrackPhysics;
     self.PolyTrackPhysics=async options=>{
-      if(!labDynamicCourse&&Object.keys(labDefaults).every(key=>labSettings[key]===labDefaults[key]))return original(options);
+      if(!labDynamicCourse&&!labAnalogWheel&&Object.keys(labDefaults).every(key=>labSettings[key]===labDefaults[key]))return original(options);
       const response=await fetch('polytrack_physics.wasm');
       if(!response.ok)throw new Error('PolyTrack Lab could not load the physics engine.');
       const bytes=new Uint8Array(await response.arrayBuffer());
@@ -146,7 +167,7 @@ self.importScripts=(...urls)=>{
       let memory;
       return original({...options,instantiateWasm(imports,receive){
         const now=imports.a.h;
-        imports.a.h=()=>{if(memory){const scratch=new DataView(memory.buffer),ptr=scratch.getUint32(0,true),id=scratch.getUint32(16,true),player=labPlayerCars.has(id);if(ptr)labTuneStep(memory,ptr,labSettings,labBoost&&player,scratch.getUint32(12,true)===1,player?{player:true,handbrake:labHandbrake,jumpSequence:labJumpSequence,state:labPlayerState.get(id)}:{});}return now();};
+        imports.a.h=()=>{if(memory){const scratch=new DataView(memory.buffer),ptr=scratch.getUint32(0,true),id=scratch.getUint32(16,true),player=labPlayerCars.has(id);if(ptr)labTuneStep(memory,ptr,labSettings,labBoost&&player,scratch.getUint32(12,true)===1,player?{player:true,wheel:labCurrentWheel(),handbrake:labHandbrake,jumpSequence:labJumpSequence,state:labPlayerState.get(id)}:{});}return now();};
         WebAssembly.instantiate(patched,imports).then(({instance,module})=>{memory=instance.exports.j;receive(instance,module);}).catch(error=>{setTimeout(()=>{throw error;});});
         return {};
       }});
@@ -156,6 +177,10 @@ self.importScripts=(...urls)=>{
 function labPatchPhysics(source,settings){
   if(source.length!==396005||source[196573]!==32||source[196574]!==8||source[196575]!==40)throw new Error('Unsupported physics engine. PolyTrack Lab needs the supplied 0.6.3 binary.');
   const bytes=source.slice(),view=new DataView(bytes.buffer);
+  if(labAnalogWheel&&labWheelPedals==='analog'){
+    const brakeConstant=[65,128,128,128,137,4,54,2];
+    if([194698,194710,194722,194734].some(address=>brakeConstant.some((byte,index)=>bytes[address+index]!==byte)))throw new Error('Native wheel brake compatibility check failed.');
+  }
   if(Object.keys(labGeometryBounds).some(key=>key!=='wheelWidth'&&(settings[key]??1)!==1)){
     const wheelLayout=[32,1,65,213,241,165,245,3,54,2,212,1,32,1,32,13,56,2,208,1,32,1,65,143,133,215,239,3,54,2,204,1];
     if(wheelLayout.some((byte,index)=>bytes[19757+index]!==byte))throw new Error('Vehicle geometry compatibility check failed.');
@@ -208,12 +233,29 @@ function labApplyWheelGeometry(data,vehicle,wheels,settings){
     data.setFloat32(wheel+212,.331*s.carScale*s.wheelRadius,true);
   }
 }
+function labApplyWheelInputs(data,wheels,input){
+  for(let index=0;index<4;index++){
+    const wheel=wheels+284*index,engine=data.getFloat32(wheel+252,true),brake=data.getFloat32(wheel+256,true);
+    if(input.pedals==='analog'){
+      data.setFloat32(wheel+252,input.brake>0||engine<0?0:engine*input.throttle,true);
+      // Native 0.6.3 applies 10 brake units to every wheel while braking
+      // forward. Keep that verified force at low speed instead of reversing.
+      data.setFloat32(wheel+256,10*input.brake,true);
+    }else{
+      if(engine!==0)data.setFloat32(wheel+252,engine*(engine>0?input.throttle:input.brake),true);
+      if(brake!==0)data.setFloat32(wheel+256,brake*input.brake,true);
+    }
+    if(index<2&&Math.abs(input.steering)!==1)data.setFloat32(wheel+232,data.getFloat32(wheel+232,true)*Math.abs(input.steering),true);
+  }
+}
 function labTuneStep(memory,car,settings,boost,afterStep=false,actions={}){
   const data=new DataView(memory.buffer),length=data.byteLength;
   if(car<1024||car+192>length)throw new Error('Invalid physics car pointer.');
   const vehicle=data.getUint32(car+32,true),body=data.getUint32(car+36,true);
   const wheels=data.getUint32(vehicle+144,true);
   if(!vehicle||!body||!wheels||body+392>length||wheels+1136>length)throw new Error('Invalid physics vehicle layout.');
+  const wheelInput=actions.player&&actions.wheel?actions.wheel:null;
+  if(!afterStep&&wheelInput)labApplyWheelInputs(data,wheels,wheelInput);
   if(!afterStep)labApplyWheelGeometry(data,vehicle,wheels,settings);
   // Bullet stores acceleration and mass-scaled gravitational force separately.
   // Native 0.6.3 gravity is -9.82 m/s²; inverse mass is at body+344.
@@ -249,10 +291,10 @@ function labTuneStep(memory,car,settings,boost,afterStep=false,actions={}){
     else if(pressed&&!grounded&&frame>20&&state.airCooldown===0&&(settings.airJumpUnlimited===1||(state.airJumpsUsed||0)<Math.max(0,Math.min(99,Math.round(settings.airJumps||0))))){data.setFloat32(body+316,data.getFloat32(body+316,true)+settings.jump,true);state.airJumpsUsed=(state.airJumpsUsed||0)+1;state.airCooldown=Math.round((settings.airJumpCooldown??.15)*1000);}
     }
   }
-  if(!afterStep&&settings.coasting>0&&!data.getUint32(4,true)&&!data.getUint32(8,true)&&[0,1,2,3].some(index=>data.getUint8(wheels+284*index+84))){const factor=Math.exp(-settings.coasting*0.001);for(const offset of [312,316,320])data.setFloat32(body+offset,data.getFloat32(body+offset,true)*factor,true);}
+  if(!afterStep&&settings.coasting>0&&(wheelInput?wheelInput.throttle===0&&wheelInput.brake===0:!data.getUint32(4,true)&&!data.getUint32(8,true))&&[0,1,2,3].some(index=>data.getUint8(wheels+284*index+84))){const factor=Math.exp(-settings.coasting*0.001);for(const offset of [312,316,320])data.setFloat32(body+offset,data.getFloat32(body+offset,true)*factor,true);}
   if(settings.maxSpeed>0){const x=data.getFloat32(body+312,true),y=data.getFloat32(body+316,true),z=data.getFloat32(body+320,true),speed=Math.hypot(x,y,z),cap=settings.maxSpeed/3.6;if(speed>cap){const scale=cap/speed;data.setFloat32(body+312,x*scale,true);data.setFloat32(body+316,y*scale,true);data.setFloat32(body+320,z*scale,true);if(afterStep)data.setFloat32(vehicle+112,(data.getFloat32(vehicle+112,true)<0?-1:1)*settings.maxSpeed,true);}}
 }
-labImportScripts('simulation_worker.bundle.js?v=1.8.0');
+labImportScripts('simulation_worker.bundle.js?v=1.9.0');
 
 
 

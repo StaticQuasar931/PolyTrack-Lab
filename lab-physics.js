@@ -147,7 +147,7 @@
       const target=new URL(url,location.href);
       const physics=target.pathname.endsWith('/simulation_worker.bundle.js');
       const dynamicCourse=physics&&!!window.PolyTrackLab?.getActiveCourse?.();
-      if(physics){target.pathname=target.pathname.replace(/simulation_worker\.bundle\.js$/,'lab-physics-worker.js');target.searchParams.set('lab','1.8.0');target.hash=encodeURIComponent(JSON.stringify({...settings,...(dynamicCourse?{_dynamicCourse:true}:{})}));}
+      if(physics){target.pathname=target.pathname.replace(/simulation_worker\.bundle\.js$/,'lab-physics-worker.js');target.searchParams.set('lab','1.9.0');target.hash=encodeURIComponent(JSON.stringify({...settings,...window.PolyTrackLab?.getWheelWorkerSettings?.(),...(dynamicCourse?{_dynamicCourse:true}:{})}));}
       super(physics?target.href:url,options);
       this.labPhysicsURL=physics?target.href:null;this.labWorkerOptions=options;this.labReplacement=null;this.labInitMessage=null;
       if(physics){workers.add(this);if(dynamicCourse)courseWorkers.set(this,{...settings});this.addEventListener?.('message',event=>{if(event.data?.labReplayError)window.dispatchEvent(new CustomEvent('polytrack-lab-replay-error',{detail:{message:event.data.message}}));});this.postMessage({labPhysics:true,boost:boostHeld,handbrake:handbrakeHeld,jumpSequence});}
@@ -155,7 +155,7 @@
     postMessage(message,...args){if(this.labPhysicsURL&&message?.messageType===0)this.labInitMessage=message;const result=this.labReplacement?this.labReplacement.postMessage(message,...args):super.postMessage(message,...args);if(this.labPhysicsURL&&message?.messageType===0){const practice=window.PolyTrackLab?.getPracticePacket?.();if(practice)this.postMessage({labPractice:practice});}return result;}
     restartPhysics(){
       if(!this.labInitMessage)throw Error('The physics engine is not ready to restart.');
-      const target=new URL(this.labPhysicsURL);target.hash=encodeURIComponent(JSON.stringify(settings));
+      const target=new URL(this.labPhysicsURL);target.hash=encodeURIComponent(JSON.stringify({...settings,...window.PolyTrackLab?.getWheelWorkerSettings?.()}));
       const replacement=new NativeWorker(target.href,this.labWorkerOptions);
       let settled=false,resolveReady,rejectReady;const ready=new Promise((resolve,reject)=>{resolveReady=resolve;rejectReady=reject;});
       const timer=setTimeout(()=>{if(!settled){settled=true;rejectReady(Error('Physics restart timed out.'));}},15000);
@@ -182,7 +182,8 @@
   document.addEventListener('keyup',event=>{if(event.code===bindings.boost)boostHeld=false;else if(event.code===bindings.handbrake)handbrakeHeld=false;else return;sendActions();});
   window.addEventListener('blur',()=>{boostHeld=false;handbrakeHeld=false;jumpStartPending=false;sendActions(true);});
   const sendPractice=practice=>{for(const worker of workers)worker.postMessage({labPractice:practice});};
-  window.PolyTrackLab={...(window.PolyTrackLab||{}),sendPractice,rebuildPhysicsWorkers,fields,presets,getSavedSetups,saveSetup,deleteSetup,randomizeSettings,consumeJumpStart,getBindings,setBindings,reconcileBindings,bindingNotice,isMechanicBindingEnabled,getBindingLabel,getAllowedBindingCodes,getSetupIdentity,describeSettings,enableAllMechanics,getSetupHistory,recordAppliedSetup,getActiveSetupHistoryEntry,sendCourseSettings,getSettings:()=>({...settings}),canReplay:replayEnabled,replayEnabled,getPhysicsKey:()=>fingerprint(settings),getDefaults:()=>normalize(null),
+  const sendWheel=wheel=>{for(const worker of workers)worker.postMessage({labWheel:wheel});};
+  window.PolyTrackLab={...(window.PolyTrackLab||{}),sendWheel,sendPractice,rebuildPhysicsWorkers,fields,presets,getSavedSetups,saveSetup,deleteSetup,randomizeSettings,consumeJumpStart,getBindings,setBindings,reconcileBindings,bindingNotice,isMechanicBindingEnabled,getBindingLabel,getAllowedBindingCodes,getSetupIdentity,describeSettings,enableAllMechanics,getSetupHistory,recordAppliedSetup,getActiveSetupHistoryEntry,sendCourseSettings,getSettings:()=>({...settings}),canReplay:replayEnabled,replayEnabled,getPhysicsKey:()=>fingerprint(settings),getDefaults:()=>normalize(null),
     saveSettings(input){const next=normalize(input);localStorage.setItem(storageKey,JSON.stringify(next));settings=next;return {...settings};},
     applySettings(input){
       const previous={...settings};this.saveSettings(input);
